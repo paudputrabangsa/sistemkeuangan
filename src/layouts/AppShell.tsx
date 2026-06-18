@@ -47,7 +47,13 @@ export default function AppShell() {
 
   // Listen to connection changes as per PRD
   useEffect(() => {
-    const handleOnline = () => setOfflineStatus(false);
+    const handleOnline = () => {
+      setOfflineStatus(false);
+      import('../services/syncService').then(({ pushSync, pullSync }) => {
+        pushSync();
+        pullSync();
+      });
+    };
     const handleOffline = () => setOfflineStatus(true);
 
     window.addEventListener('online', handleOnline);
@@ -56,9 +62,20 @@ export default function AppShell() {
     // Initial check
     setOfflineStatus(!navigator.onLine);
 
+    // Background sync interval every 30 seconds
+    const interval = setInterval(() => {
+      if (navigator.onLine) {
+        import('../services/syncService').then(({ pushSync, pullSync }) => {
+          pushSync();
+          pullSync();
+        });
+      }
+    }, 30000);
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      clearInterval(interval);
     };
   }, [setOfflineStatus]);
 

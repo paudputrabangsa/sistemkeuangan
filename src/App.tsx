@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useEffect } from 'react';
 import { useAuthStore } from './store/authStore';
 import ToastContainer from './components/ui/ToastContainer';
 import GlobalConfirmProvider from './components/ui/GlobalConfirmProvider';
@@ -43,13 +44,14 @@ import MigrasiSiswaTahunBerjalanPage from './pages/MigrasiSiswaTahunBerjalanPage
 import { getSetupStatus } from './services/setupStatusService';
 import ResetDataPage from './pages/ResetDataPage';
 import PromoPage from './pages/PromoPage';
+import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  return <>{children}</>;
+  return <GlobalSyncLoader>{children}</GlobalSyncLoader>;
 }
 
 function GuestRoute({ children }: { children: React.ReactNode }) {
@@ -57,6 +59,33 @@ function GuestRoute({ children }: { children: React.ReactNode }) {
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
+  return <>{children}</>;
+}
+
+function GlobalSyncLoader({ children }: { children: React.ReactNode }) {
+  const isInitialSyncDone = useAuthStore((state) => state.isInitialSyncDone);
+  const performInitialSync = useAuthStore((state) => state.performInitialSync);
+
+  useEffect(() => {
+    if (!isInitialSyncDone) {
+      performInitialSync();
+    }
+  }, [isInitialSyncDone, performInitialSync]);
+
+  if (!isInitialSyncDone && import.meta.env.VITE_SUPABASE_URL) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-xl flex flex-col items-center max-w-sm w-full text-center">
+          <div className="h-16 w-16 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center mb-6">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">Memuat Data Server...</h2>
+          <p className="text-slate-500 text-sm">Harap tunggu sebentar, kami sedang menyelaraskan data lokal Anda dengan Supabase.</p>
+        </div>
+      </div>
+    );
+  }
+
   return <>{children}</>;
 }
 

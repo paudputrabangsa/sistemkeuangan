@@ -1,0 +1,348 @@
+MENU APLIKASI SESUAI AGENTS.MD
+
+Berikut struktur menu yang tercantum di PRD agents.md dan cocok dengan struktur aplikasi.
+
+1. Dashboard
+2. Master Data
+3. Siswa
+4. Kelas
+5. Tahun Ajaran
+6. Transaksi
+7. Tagihan
+8. Pembayaran
+9. Akademik/Periode
+10. Proses Naik Kelas
+11. Laporan
+12. Rekap Penerimaan
+13. Daftar Tunggakan
+14. Riwayat per Siswa
+15. Laporan Pendaftaran
+16. Laporan Diskon Early Bird
+17. Pengaturan
+18. Profil Sekolah
+19. Akun
+20. Permission
+21. Jenis Tagihan
+22. Metode Pembayaran
+23. Early Bird
+
+KECOCOKAN DENGAN AGENTS.MD
+
+1. Dashboard cocok
+2. Master Data > Siswa cocok
+3. Master Data > Kelas cocok
+4. Master Data > Tahun Ajaran cocok
+5. Transaksi > Tagihan cocok
+6. Transaksi > Pembayaran cocok
+7. Akademik/Periode > Proses Naik Kelas cocok
+8. Laporan > Rekap Penerimaan cocok
+9. Laporan > Daftar Tunggakan cocok
+10. Laporan > Riwayat per Siswa cocok
+11. Laporan > Laporan Pendaftaran cocok
+12. Laporan > Laporan Diskon Early Bird cocok
+13. Pengaturan > Profil Sekolah cocok
+14. Pengaturan > Akun cocok
+15. Pengaturan > Permission cocok
+16. Pengaturan > Jenis Tagihan cocok
+17. Pengaturan > Metode Pembayaran cocok
+18. Pengaturan > Early Bird cocok
+
+ALUR BISNIS PER MENU
+
+1. DASHBOARD
+1. Admin login.
+2. Klik menu Dashboard.
+3. Sistem menampilkan ringkasan data dari IndexedDB: jumlah siswa aktif, total pembayaran, tunggakan, pending sync, pembayaran terbaru.
+4. Jika admin klik Daftar Siswa, sistem pindah ke menu Siswa.
+5. Jika admin klik Catat Bayar, sistem pindah ke menu Pembayaran.
+6. Jika admin klik Lihat Semua, sistem pindah ke daftar pembayaran.
+
+2. SISWA
+1. Admin klik menu Siswa.
+2. Sistem menampilkan daftar siswa dari IndexedDB.
+3. Admin bisa klik tab status: Semua, Calon, Aktif, Tidak Aktif, Arsip.
+4. Admin bisa isi kolom pencarian nama siswa atau wali.
+5. Admin bisa pilih filter kelas.
+6. Admin klik Tambah Siswa.
+7. Sistem membuka form pendaftaran siswa.
+8. Admin isi data siswa, data wali, dan data pendaftaran.
+9. Admin klik Simpan.
+10. Service layer cek early bird, tentukan diskon, buat siswa, buat tagihan pendaftaran, buat siswa_kelas jika pindahan, lalu simpan ke IndexedDB dan queue sync.
+11. Setelah sukses, sistem membuka Detail Siswa.
+
+3. DETAIL SISWA
+1. Dari daftar siswa, admin klik Lihat Detail.
+2. Sistem membuka halaman detail siswa.
+3. Tab Profil menampilkan data siswa dan riwayat kelas.
+4. Tab Tagihan menampilkan semua tagihan siswa.
+5. Tab Riwayat Pembayaran menampilkan semua pembayaran siswa.
+6. Jika admin klik Edit Profil, sistem membuka halaman edit siswa.
+7. Jika admin klik Catat Pembayaran pada tagihan, sistem membuka form pembayaran dengan tagihan terpilih.
+8. Jika admin klik Lihat Riwayat Bayar, sistem pindah ke tab riwayat pembayaran.
+9. Jika nanti fitur Set Berhenti aktif: admin klik Set Berhenti, pilih penanganan tiap tagihan, lalu klik Konfirmasi Berhenti.
+
+4. EDIT SISWA
+1. Dari daftar siswa atau detail siswa, admin klik Edit.
+2. Sistem membuka form edit.
+3. Admin ubah data identitas atau data wali.
+4. Admin klik Simpan Perubahan.
+5. Service layer update data siswa di IndexedDB dan queue sync.
+6. Sistem kembali ke detail siswa.
+
+5. TAHUN AJARAN
+1. Admin klik menu Tahun Ajaran.
+2. Sistem menampilkan daftar tahun ajaran dari IndexedDB.
+3. Admin klik Buat Tahun Ajaran Baru.
+4. Admin isi nama, tanggal mulai, tanggal selesai.
+5. Jika ingin langsung aktif, admin centang opsi aktif.
+6. Admin klik Simpan.
+7. Service layer validasi tanggal dan memastikan hanya satu tahun ajaran aktif.
+8. Jika admin klik Edit, sistem membuka form edit tahun ajaran.
+9. Jika admin klik Aktifkan, service layer menonaktifkan tahun ajaran lain lalu mengaktifkan record ini.
+
+6. KELAS
+1. Admin klik menu Kelas.
+2. Sistem menampilkan daftar kelas berdasarkan tahun ajaran aktif atau filter tahun ajaran.
+3. Admin klik Tambah Kelas.
+4. Admin isi nama kelas, tingkat, tarif SPP.
+5. Admin klik Simpan.
+6. Service layer simpan kelas ke IndexedDB dan queue sync.
+7. Admin klik Edit untuk ubah data kelas.
+8. Admin klik Hapus hanya jika tidak ada siswa aktif di kelas itu.
+
+7. TAGIHAN
+1. Admin klik menu Tagihan.
+2. Sistem menampilkan daftar tagihan lintas siswa dari IndexedDB.
+3. Admin bisa filter bulan, kelas, jenis, status.
+4. Untuk SPP bulanan: admin isi bulan dan jatuh tempo di section Generate SPP.
+5. Admin klik Generate SPP.
+6. Service layer ambil siswa aktif, cek duplikat SPP, hitung diskon, buat tagihan baru, simpan ke IndexedDB.
+7. Untuk tagihan manual: admin isi nama tagihan, jenis, jumlah, jatuh tempo, target siswa.
+8. Admin pilih target: Semua siswa aktif, Per kelas, atau Per individu.
+9. Admin klik Simpan Tagihan Manual.
+10. Service layer membuat tagihan untuk semua target yang dipilih.
+11. Jika admin klik Catat Pembayaran, sistem buka halaman pembayaran.
+12. Jika admin klik Hapus, service layer hanya menghapus soft delete jika belum ada pembayaran.
+
+8. PEMBAYARAN
+1. Admin klik menu Pembayaran atau tombol Catat Pembayaran.
+2. Sistem membuka form pembayaran.
+3. Admin pilih siswa.
+4. Sistem memuat tagihan siswa yang belum lunas.
+5. Admin pilih tagihan.
+6. Sistem menampilkan total, sudah dibayar, sisa, dan preview status.
+7. Admin isi tanggal bayar, jumlah diterima, metode pembayaran, catatan.
+8. Admin klik Simpan Pembayaran.
+9. Service layer validasi jumlah tidak melebihi sisa, simpan pembayaran, update tagihan, hitung status baru.
+10. Jika tagihan pendaftaran jadi lunas dan semua tagihan pendaftaran siswa sudah lunas, sistem ubah status siswa dari calon ke aktif.
+11. Setelah sukses, admin bisa klik Catat Pembayaran Lain atau Selesai.
+
+9. PROSES NAIK KELAS
+1. Admin klik menu Proses Naik Kelas.
+2. Sistem membuka wizard 4 langkah.
+3. Langkah 1: admin pilih tahun ajaran tujuan atau buat baru.
+4. Klik lanjut ke Langkah 2.
+5. Langkah 2: admin mapping kelas asal ke kelas tujuan.
+6. Klik lanjut ke Langkah 3.
+7. Langkah 3: admin review siswa per kelas, centang siswa yang naik, dan jika perlu isi override tarif.
+8. Klik lanjut ke Langkah 4.
+9. Langkah 4: admin review ringkasan.
+10. Klik Proses Naik Kelas.
+11. Service layer tutup siswa_kelas lama, buat siswa_kelas baru, arsipkan siswa yang tidak naik, lalu ubah tahun ajaran aktif.
+
+10. REKAP PENERIMAAN
+1. Admin klik menu Laporan > Rekap Penerimaan.
+2. Sistem memuat data laporan dari IndexedDB.
+3. Admin pilih filter rentang bulan, kelas, dan jenis tagihan.
+4. Sistem menampilkan tabel jumlah tagihan, total tagihan, total terbayar, total belum terbayar.
+5. Jika admin klik Export PDF, sistem generate PDF di client.
+6. Jika admin klik Export Excel, sistem generate Excel di client.
+
+11. DAFTAR TUNGGAKAN
+1. Admin klik menu Laporan > Daftar Tunggakan.
+2. Sistem memuat semua tagihan belum lunas dari IndexedDB.
+3. Admin pilih filter kelas, jenis tagihan, minimal sisa, dan status jatuh tempo.
+4. Sistem menampilkan daftar tunggakan terurut dari jatuh tempo paling lama.
+5. Admin klik Export PDF atau Export Excel bila diperlukan.
+
+12. RIWAYAT PER SISWA
+1. Admin klik menu Laporan > Riwayat per Siswa.
+2. Admin pilih siswa.
+3. Admin pilih rentang tanggal.
+4. Sistem menampilkan profil siswa, daftar tagihan, daftar pembayaran.
+5. Admin klik Export PDF untuk laporan per siswa.
+
+13. LAPORAN PENDAFTARAN
+1. Admin klik menu Laporan > Laporan Pendaftaran.
+2. Admin pilih filter status pembayaran pendaftaran dan tahun ajaran.
+3. Sistem menampilkan daftar siswa pendaftar beserta biaya, sudah dibayar, sisa, dan status.
+4. Admin klik Export Excel atau Export PDF.
+
+14. LAPORAN DISKON EARLY BIRD
+1. Admin klik menu Laporan > Laporan Diskon Early Bird.
+2. Admin pilih tahun ajaran.
+3. Sistem menampilkan daftar siswa yang mendapat diskon early bird.
+4. Sistem hitung total SPP normal dan total diskon dinikmati.
+5. Admin klik Export Excel.
+
+15. PROFIL SEKOLAH
+1. Admin klik menu Pengaturan > Profil Sekolah.
+2. Sistem memuat satu record profil_sekolah dari IndexedDB.
+3. Admin ubah nama sekolah, alamat, telepon, email, NPSN, nama kepala sekolah.
+4. Admin klik Simpan.
+5. Service layer update profil_sekolah di IndexedDB dan queue sync.
+
+16. AKUN
+1. Admin klik menu Pengaturan > Akun.
+2. Sistem menampilkan daftar akun.
+3. Admin klik Tambah Akun.
+4. Admin isi nama, email, role, password, status aktif.
+5. Admin klik Simpan.
+6. Service layer buat akun auth lalu simpan record akun.
+7. Untuk edit: admin klik Edit, ubah data, lalu klik Simpan.
+8. Untuk nonaktif: admin klik Nonaktifkan, sistem ubah aktif = false.
+
+17. PERMISSION
+1. Admin klik menu Pengaturan > Permission.
+2. Sistem menampilkan tabel permission per modul dan aksi.
+3. Admin pilih role.
+4. Admin centang atau hilangkan centang aksi yang diizinkan.
+5. Sistem auto-save atau admin klik Simpan Perubahan.
+6. Service layer update tabel permission.
+7. Setelah itu, semua aksi UI dan service akan mengikuti permission tersebut.
+
+18. JENIS TAGIHAN
+1. Admin klik menu Pengaturan > Jenis Tagihan.
+2. Sistem memuat setting jenis_tagihan dari IndexedDB.
+3. Admin tambah jenis baru, edit nama, atau aktif/nonaktifkan jenis.
+4. Admin klik Simpan.
+5. Service layer update record pengaturan key jenis_tagihan.
+
+19. METODE PEMBAYARAN
+1. Admin klik menu Pengaturan > Metode Pembayaran.
+2. Sistem memuat setting metode_pembayaran.
+3. Admin tambah metode, edit nama, atau aktif/nonaktifkan metode.
+4. Admin klik Simpan.
+5. Service layer update record pengaturan key metode_pembayaran.
+
+20. EARLY BIRD
+1. Admin klik menu Pengaturan > Early Bird.
+2. Sistem memuat setting early_bird.
+3. Admin aktifkan atau nonaktifkan early bird.
+4. Admin isi tanggal mulai, tanggal selesai, persen diskon, keterangan.
+5. Admin klik Simpan.
+6. Service layer update record pengaturan key early_bird.
+7. Setelah itu, saat admin mendaftarkan siswa baru, sistem otomatis cek periode ini.
+
+ALUR BISNIS INTI END-TO-END
+
+A. ALUR PENDAFTARAN SISWA BARU
+1. Klik Siswa.
+2. Klik Tambah Siswa.
+3. Isi data siswa.
+4. Isi data wali.
+5. Isi data pendaftaran.
+6. Klik Simpan.
+7. Sistem cek early bird.
+8. Sistem buat siswa status calon.
+9. Sistem buat tagihan pendaftaran.
+10. Jika pindahan, sistem buat riwayat kelas awal.
+11. Sistem simpan semua ke IndexedDB.
+12. Sistem tampilkan detail siswa.
+
+B. ALUR SISWA PINDAHAN
+1. Klik Siswa.
+2. Klik Tambah Siswa.
+3. Pilih Jenis Masuk = Pindahan.
+4. Pilih Kelas Tujuan.
+5. Isi biaya pendaftaran.
+6. Klik Simpan.
+7. Sistem paksa nonaktifkan diskon early bird.
+8. Sistem buat siswa status calon.
+9. Sistem buat tagihan pendaftaran.
+10. Sistem buat siswa_kelas.
+11. Sistem simpan ke IndexedDB.
+
+C. ALUR GENERATE SPP BULANAN
+1. Klik Tagihan.
+2. Isi Bulan dan Tahun.
+3. Isi Jatuh Tempo.
+4. Klik Generate SPP.
+5. Sistem ambil siswa aktif.
+6. Sistem cek apakah SPP bulan itu sudah ada.
+7. Jika belum ada, sistem ambil kelas aktif siswa.
+8. Sistem hitung tarif final dengan atau tanpa diskon.
+9. Sistem buat tagihan SPP.
+10. Sistem simpan semua ke IndexedDB.
+11. Sistem tampilkan jumlah dibuat dan jumlah dilewati.
+
+D. ALUR BUAT TAGIHAN MANUAL
+1. Klik Tagihan.
+2. Isi Nama Tagihan.
+3. Pilih Jenis.
+4. Isi Jumlah Total.
+5. Isi Jatuh Tempo.
+6. Pilih target: semua, per kelas, atau per individu.
+7. Klik Simpan Tagihan Manual.
+8. Sistem ambil daftar siswa target.
+9. Sistem buat tagihan untuk tiap siswa.
+10. Sistem simpan ke IndexedDB.
+
+E. ALUR PEMBAYARAN
+1. Klik Pembayaran.
+2. Pilih Siswa.
+3. Pilih Tagihan.
+4. Isi Tanggal Bayar.
+5. Isi Jumlah Diterima.
+6. Pilih Metode Pembayaran.
+7. Isi Catatan jika perlu.
+8. Klik Simpan Pembayaran.
+9. Sistem validasi jumlah tidak melebihi sisa.
+10. Sistem simpan pembayaran.
+11. Sistem update nilai sudah_dibayar.
+12. Sistem hitung status tagihan: belum_bayar, sebagian, atau lunas.
+13. Jika tagihan pendaftaran lunas, sistem cek semua tagihan pendaftaran siswa.
+14. Jika semua lunas, status siswa berubah jadi aktif.
+
+F. ALUR EDIT SISWA
+1. Klik Siswa.
+2. Klik Edit.
+3. Ubah data profil.
+4. Klik Simpan Perubahan.
+5. Sistem update record siswa.
+6. Sistem simpan ke IndexedDB.
+
+G. ALUR AKTIFKAN TAHUN AJARAN
+1. Klik Tahun Ajaran.
+2. Klik Aktifkan pada salah satu record.
+3. Sistem nonaktifkan semua tahun ajaran lain.
+4. Sistem set record ini jadi aktif.
+5. Sistem simpan ke IndexedDB.
+
+H. ALUR BERHENTIKAN SISWA
+1. Klik Siswa.
+2. Klik Lihat Detail.
+3. Klik Set Berhenti.
+4. Sistem tampilkan semua tagihan belum lunas.
+5. Untuk tiap tagihan pilih: Tandai Lunas, Hapus Tagihan, atau Biarkan.
+6. Klik Konfirmasi Berhenti.
+7. Sistem proses tiap tagihan sesuai pilihan.
+8. Sistem tutup siswa_kelas aktif.
+9. Sistem ubah status siswa jadi tidak_aktif.
+10. Sistem simpan semua ke IndexedDB.
+
+I. ALUR PROSES NAIK KELAS
+1. Klik Proses Naik Kelas.
+2. Pilih tahun ajaran tujuan.
+3. Klik lanjut.
+4. Mapping kelas asal ke kelas tujuan.
+5. Klik lanjut.
+6. Review siswa.
+7. Tentukan siapa yang naik dan siapa yang diarsip.
+8. Klik lanjut.
+9. Review ringkasan.
+10. Klik Proses Naik Kelas.
+11. Sistem tutup kelas lama.
+12. Sistem buat kelas baru untuk siswa yang naik.
+13. Sistem arsipkan siswa yang tidak lanjut.
+14. Sistem ubah tahun ajaran aktif.
