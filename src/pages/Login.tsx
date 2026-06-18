@@ -35,7 +35,7 @@ export default function Login() {
       if (success) {
         navigate('/');
       } else {
-        setError('Email atau password salah. Coba: admin@paud.sch.id / admin123');
+        setError('Email atau password salah.');
       }
     } catch (err) {
       setError('Terjadi kesalahan sistem. Silakan coba lagi.');
@@ -45,7 +45,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center bg-slate-900 overflow-hidden font-sans">
+    <div className="min-h-screen relative flex items-center justify-center bg-slate-50 overflow-hidden font-sans">
 
       {/* BACKGROUND GRAPHICS / BLUR MESHES */}
       <div className="absolute -left-20 -top-20 w-96 h-96 rounded-full bg-brand-600/30 blur-[120px] animate-pulse-slow"></div>
@@ -55,9 +55,9 @@ export default function Login() {
 
       {/* Floating Sparkles in Background */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-20">
-        <Sparkles className="absolute top-10 left-10 text-white h-6 w-6 animate-spin-slow" />
-        <Sparkles className="absolute bottom-20 right-10 text-white h-4 w-4 animate-float" />
-        <Sparkles className="absolute top-1/3 right-20 text-white h-5 w-5 animate-pulse" />
+        <Sparkles className="absolute top-10 left-10 text-brand-500 h-6 w-6 animate-spin-slow" />
+        <Sparkles className="absolute bottom-20 right-10 text-indigo-500 h-4 w-4 animate-float" />
+        <Sparkles className="absolute top-1/3 right-20 text-brand-400 h-5 w-5 animate-pulse" />
       </div>
 
       {/* CARD CONTAINER */}
@@ -68,17 +68,17 @@ export default function Login() {
           <div className="inline-flex p-3.5 rounded-2xl bg-gradient-to-tr from-brand-500 to-indigo-600 text-white shadow-xl shadow-brand-500/20 mb-4 animate-float">
             <Sparkles className="h-6 w-6" />
           </div>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight leading-none">PAUD Billing System</h2>
-          <p className="text-xs text-indigo-200 mt-2 font-medium">Sistem Pencatatan Tagihan & Keuangan PAUD</p>
+          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight leading-none">PAUD Billing System</h2>
+          <p className="text-xs text-slate-500 mt-2 font-medium">Sistem Pencatatan Tagihan & Keuangan PAUD</p>
         </div>
 
         {/* Form Card */}
-        <div className="glass bg-white/5 dark:bg-slate-950/40 backdrop-blur-xl border border-white/10 dark:border-slate-800/60 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+        <div className="bg-white border border-slate-200 shadow-xl shadow-slate-200/50 p-8 rounded-3xl relative overflow-hidden z-20">
 
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-brand-500 to-indigo-600"></div>
 
-          <h3 className="text-xl font-bold text-white mb-2">Masuk Administrator</h3>
-          <p className="text-xs text-slate-400 mb-6">Silakan masuk menggunakan akun admin Anda</p>
+          <h3 className="text-xl font-bold text-slate-800 mb-2">Masuk Administrator</h3>
+          <p className="text-xs text-slate-500 mb-6">Silakan masuk menggunakan akun admin Anda</p>
 
           {/* Validation Errors */}
           {error && (
@@ -91,7 +91,7 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Field */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300">Email Sekolah</label>
+              <label className="text-xs font-bold text-slate-700">Email Sekolah</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
                   <Mail className="h-4.5 w-4.5" />
@@ -101,14 +101,14 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@paud.sch.id"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
             </div>
 
             {/* Password Field */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300">Password</label>
+              <label className="text-xs font-bold text-slate-700">Password</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
                   <Lock className="h-4.5 w-4.5" />
@@ -118,12 +118,12 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-10 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-10 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -134,7 +134,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-6 bg-gradient-to-r from-brand-600 to-indigo-600 text-white py-3.5 px-4 rounded-xl text-sm font-bold shadow-lg shadow-brand-600/20 hover:from-brand-500 hover:to-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01]"
+              className="w-full mt-6 bg-gradient-to-r from-brand-600 to-indigo-600 text-white py-3.5 px-4 rounded-xl text-sm font-bold shadow-lg shadow-brand-600/20 hover:from-brand-500 hover:to-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-white transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01]"
             >
               {isLoading ? (
                 <>
@@ -151,14 +151,6 @@ export default function Login() {
               )}
             </button>
           </form>
-
-          {/* Seed accounts disclaimer */}
-          <div className="mt-6 pt-6 border-t border-white/5 text-center">
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Akun Uji Coba Default</span>
-            <code className="text-[10px] text-brand-400 bg-brand-950/40 px-2 py-0.5 rounded mt-1.5 inline-block">
-              admin@paud.sch.id / admin123
-            </code>
-          </div>
 
         </div>
 
