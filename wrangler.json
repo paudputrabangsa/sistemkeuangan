@@ -1,5 +1,9 @@
 {
   "name": "sistemkeuangan",
   "compatibility_date": "2024-03-20",
-  "pages_build_output_dir": "dist"
+  "pages_build_output_dir": "dist",
+  "vars": {
+    "VITE_SUPABASE_URL": "https://mbufpgzuzggogpffncva.supabase.co",
+    "VITE_SUPABASE_ANON_KEY": "sb_publishable_8GtuJIXAO6W_IDoeOje03w_UK4we3ao"
+  }
 }
