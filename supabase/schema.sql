@@ -4,6 +4,19 @@
 -- Run this script in the Supabase SQL Editor.
 -- It matches the Dexie IndexedDB schema.
 
+-- UNCOMMENT THE LINES BELOW TO RESET AND DROP EXISTING TABLES:
+-- DROP TABLE IF EXISTS audit_log CASCADE;
+-- DROP TABLE IF EXISTS pembayaran CASCADE;
+-- DROP TABLE IF EXISTS tagihan CASCADE;
+-- DROP TABLE IF EXISTS siswa_kelas CASCADE;
+-- DROP TABLE IF EXISTS siswa CASCADE;
+-- DROP TABLE IF EXISTS pengaturan_pendaftaran_tahun_ajaran CASCADE;
+-- DROP TABLE IF EXISTS kelas CASCADE;
+-- DROP TABLE IF EXISTS tingkat CASCADE;
+-- DROP TABLE IF EXISTS tahun_ajaran CASCADE;
+-- DROP TABLE IF EXISTS pengaturan CASCADE;
+-- DROP TABLE IF EXISTS profil_sekolah CASCADE;
+
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -217,3 +230,33 @@ CREATE TABLE IF NOT EXISTS audit_log (
   updated_at TIMESTAMPTZ NOT NULL,
   deleted_at TIMESTAMPTZ
 );
+
+-- =================================================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- =================================================================================
+-- Enable RLS for all tables to ensure data is only accessible by authenticated users.
+
+ALTER TABLE profil_sekolah ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pengaturan ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tahun_ajaran ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tingkat ENABLE ROW LEVEL SECURITY;
+ALTER TABLE kelas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pengaturan_pendaftaran_tahun_ajaran ENABLE ROW LEVEL SECURITY;
+ALTER TABLE siswa ENABLE ROW LEVEL SECURITY;
+ALTER TABLE siswa_kelas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tagihan ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pembayaran ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
+
+-- Create policies allowing ALL operations for authenticated users only
+CREATE POLICY "Allow authenticated users on profil_sekolah" ON profil_sekolah FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users on pengaturan" ON pengaturan FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users on tahun_ajaran" ON tahun_ajaran FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users on tingkat" ON tingkat FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users on kelas" ON kelas FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users on pengaturan_pendaftaran_tahun_ajaran" ON pengaturan_pendaftaran_tahun_ajaran FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users on siswa" ON siswa FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users on siswa_kelas" ON siswa_kelas FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users on tagihan" ON tagihan FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users on pembayaran" ON pembayaran FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users on audit_log" ON audit_log FOR ALL TO authenticated USING (true);
