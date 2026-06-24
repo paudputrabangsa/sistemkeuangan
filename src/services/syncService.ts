@@ -23,6 +23,8 @@ export const SYNCABLE_TABLES: SyncableTableName[] = [
  */
 export async function pushSync(): Promise<void> {
   if (!import.meta.env.VITE_SUPABASE_URL || !navigator.onLine) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
 
   // Only process pending queue items
   const queue = await db.sync_queue
@@ -100,6 +102,8 @@ export async function pushSync(): Promise<void> {
  */
 export async function pullSync(isInitial = false): Promise<void> {
   if (!import.meta.env.VITE_SUPABASE_URL || !navigator.onLine) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
 
   const LAST_SYNC_KEY = 'paud_last_sync_timestamp';
   const lastSync = isInitial ? null : localStorage.getItem(LAST_SYNC_KEY);
