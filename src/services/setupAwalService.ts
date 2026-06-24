@@ -338,9 +338,6 @@ export async function completeSetupAwal(actor: ServiceActor, draft: SetupAwalDra
     await markSetupAwalCompleted();
   });
 
-  const { setPinKasir, setSandiDarurat } = await import('./authService');
-  await setPinKasir(draft.keamananPin);
-  await setSandiDarurat(draft.keamananSandi);
 
   return { year, tingkatRecords, kelasRecords, registration };
 }

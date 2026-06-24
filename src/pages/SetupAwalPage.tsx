@@ -18,7 +18,7 @@ import { useConfirmStore } from '../store/confirmStore';
 
 // ===================== Types =====================
 
-type StepId = 'mode' | 'profil' | 'tahun' | 'tingkat' | 'biaya' | 'metode' | 'diskon' | 'nis' | 'keamanan' | 'review';
+type StepId = 'mode' | 'profil' | 'tahun' | 'tingkat' | 'biaya' | 'metode' | 'diskon' | 'nis' | 'review';
 type ValidationIssue = { message: string; fieldId?: string; stepIndex?: number };
 
 const steps: Array<{ id: StepId; label: string; description: string }> = [
@@ -30,7 +30,6 @@ const steps: Array<{ id: StepId; label: string; description: string }> = [
   { id: 'metode', label: 'Metode & Tagihan', description: 'Master global' },
   { id: 'diskon', label: 'Promo / Diskon', description: 'Potongan harga' },
   { id: 'nis', label: 'Format NIS', description: 'Nomor induk siswa' },
-  { id: 'keamanan', label: 'Keamanan', description: 'Akses lokal' },
   { id: 'review', label: 'Review', description: 'Cek lalu simpan' },
 ];
 
@@ -411,13 +410,6 @@ export default function SetupAwalPage() {
     return null;
   }
 
-  function validateKeamanan(): ValidationIssue | null {
-    if (!keamananPin || keamananPin.length < 4) return issue('PIN Kasir wajib diisi minimal 4 angka.', 'keamanan_pin', 8);
-    if (!/^\d+$/.test(keamananPin)) return issue('PIN Kasir hanya boleh berisi angka.', 'keamanan_pin', 8);
-    if (!keamananSandi || keamananSandi.length < 6) return issue('Sandi Darurat wajib diisi minimal 6 karakter.', 'keamanan_sandi', 8);
-    return null;
-  }
-
   function validateMetode(): ValidationIssue | null {
     if (!metodePembayaran.some((i) => i.aktif && i.nama.trim())) return issue('Minimal satu metode pembayaran aktif.', `metode_nama_${metodePembayaran[0]?.id ?? 0}`, 5);
     const mn = new Set<string>();
@@ -441,13 +433,13 @@ export default function SetupAwalPage() {
   function validateStep(stepId: StepId) {
     const validators: Record<StepId, () => ValidationIssue | null> = {
       mode: validateMode, profil: validateProfile, tahun: validateYear, tingkat: validateTingkat, biaya: validateBiaya,
-      metode: validateMetode, diskon: validateDiskon, nis: validateNIS, keamanan: validateKeamanan, review: validateAll,
+      metode: validateMetode, diskon: validateDiskon, nis: validateNIS, review: validateAll,
     };
     return validators[stepId]();
   }
 
   function validateAll() {
-    return validateMode() || validateProfile() || validateYear() || validateTingkat() || validateBiaya() || validateMetode() || validateDiskon() || validateNIS() || validateKeamanan();
+    return validateMode() || validateProfile() || validateYear() || validateTingkat() || validateBiaya() || validateMetode() || validateDiskon() || validateNIS();
   }
 
   function validateUntilStep(targetIndex: number) {
@@ -1140,27 +1132,8 @@ export default function SetupAwalPage() {
     );
   }
 
-  // ===================== Step 8: Keamanan =====================
 
-  function renderKeamananStep() {
-    return (
-      <div className="space-y-5">
-        <div className="rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-sm text-brand-700 dark:border-brand-950/50 dark:bg-brand-950/20 dark:text-brand-300">
-          <strong>Penting:</strong> Ubah sandi bawaan untuk mencegah akses tidak sah ke data lokal di laptop ini saat offline.
-        </div>
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <FormField label="PIN Kasir (Akses cepat transaksi)" htmlFor="keamanan_pin" error={fieldErrors.keamanan_pin} hint="Minimal 4 angka. Bawaan: 123456">
-            <input id="keamanan_pin" type="password" inputMode="numeric" pattern="[0-9]*" value={keamananPin} onChange={(e) => setKeamananPin(e.target.value)} placeholder="Contoh: 123456" className={inputClassFor('keamanan_pin')} />
-          </FormField>
-          <FormField label="Sandi Darurat (Akses penuh saat offline)" htmlFor="keamanan_sandi" error={fieldErrors.keamanan_sandi} hint="Minimal 6 karakter. Bawaan: doomsday123">
-            <input id="keamanan_sandi" type="password" value={keamananSandi} onChange={(e) => setKeamananSandi(e.target.value)} placeholder="Contoh: doomsday123" className={inputClassFor('keamanan_sandi')} />
-          </FormField>
-        </div>
-      </div>
-    );
-  }
-
-  // ===================== Step 9: Review =====================
+  // ===================== Step 8: Review =====================
 
   function renderReviewStep() {
     const validTingkat = tingkatRows.filter((t) => t.nama.trim());
@@ -1222,7 +1195,6 @@ export default function SetupAwalPage() {
     if (currentStep.id === 'metode') return renderMetodeStep();
     if (currentStep.id === 'diskon') return renderDiskonStep();
     if (currentStep.id === 'nis') return renderNISStep();
-    if (currentStep.id === 'keamanan') return renderKeamananStep();
     return renderReviewStep();
   }
 

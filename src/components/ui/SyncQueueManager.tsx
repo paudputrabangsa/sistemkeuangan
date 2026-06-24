@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db';
 import { retrySyncItem, discardSyncItem } from '../../services/syncService';
@@ -129,7 +129,7 @@ export default function SyncQueueManager({ onClose }: SyncQueueManagerProps) {
                   <div className="flex-1 overflow-hidden">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:bg-slate-800 dark:text-slate-400">{item.tabel}</span>
-                      <span className="rounded-md bg-warning-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-warning-700 dark:bg-warning-950 dark:text-warning-400">{item.action}</span>
+                      <span className="rounded-md bg-warning-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-warning-700 dark:bg-warning-950 dark:text-warning-400">{item.aksi}</span>
                       <span className="text-xs text-slate-500 font-mono hidden md:inline">ID: {item.record_id.split('-')[0]}...</span>
                     </div>
                     <p className="text-sm font-semibold text-danger-700 dark:text-danger-400 line-clamp-2">Error: {item.error_message || 'Unknown error'}</p>
@@ -146,7 +146,7 @@ export default function SyncQueueManager({ onClose }: SyncQueueManagerProps) {
                       {loadingIds.has(item.id!) ? 'Memproses...' : 'Coba Ulang'}
                     </button>
                     <button 
-                      onClick={() => handleDiscard(item.id!, item.action)}
+                      onClick={() => handleDiscard(item.id!, item.aksi)}
                       disabled={loadingIds.has(item.id!)}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-danger-200 bg-white px-3 py-2 text-sm font-bold text-danger-600 transition hover:bg-danger-50 hover:text-danger-700 disabled:opacity-50 dark:border-danger-900/50 dark:bg-slate-800 dark:text-danger-400 dark:hover:bg-danger-950/30"
                     >
