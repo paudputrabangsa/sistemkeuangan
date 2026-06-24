@@ -15,31 +15,94 @@ async function getSchoolProfile() {
   };
 }
 
-function addHeader(doc: jsPDF, profile: any, title: string, subtitle?: string) {
+function addHeader(doc: jsPDF, profile: any, title: string, subtitle?: string): number {
   const pageWidth = doc.internal.pageSize.width;
+  let currentY = 15;
   
+  // Yayasan
+  if (profile.nama_yayasan) {
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(profile.nama_yayasan.toUpperCase(), pageWidth / 2, currentY, { align: 'center' });
+    currentY += 6;
+  }
+  
+  // Nama Sekolah
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text(profile.nama_sekolah.toUpperCase(), pageWidth / 2, 15, { align: 'center' });
+  doc.text((profile.nama_sekolah || 'PAUD / TK AL-FALAH').toUpperCase(), pageWidth / 2, currentY, { align: 'center' });
+  currentY += 6;
   
+  // NPSN & Izin
+  const npsn = profile.npsn ? `NPSN: ${profile.npsn}` : '';
+  const izin = profile.izin_operasional ? `Izin Operasional: ${profile.izin_operasional}` : '';
+  const npsnIzin = [npsn, izin].filter(Boolean).join(' | ');
+  if (npsnIzin) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(npsnIzin, pageWidth / 2, currentY, { align: 'center' });
+    currentY += 5;
+  }
+  
+  // Alamat Lengkap
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  const alamat = profile.alamat_jalan || profile.alamat || '';
-  const telp = profile.telepon ? `Telp: ${profile.telepon}` : '';
-  doc.text(`${alamat} ${telp}`, pageWidth / 2, 21, { align: 'center' });
   
-  doc.line(14, 25, pageWidth - 14, 25);
-  doc.line(14, 26, pageWidth - 14, 26);
+  const alamatParts = [];
+  if (profile.alamat_jalan) {
+    let jalan = profile.alamat_jalan;
+    if (profile.alamat_rt) jalan += ` RT ${profile.alamat_rt}`;
+    if (profile.alamat_rw) jalan += ` RW ${profile.alamat_rw}`;
+    alamatParts.push(jalan);
+  }
+  if (profile.alamat_desa) alamatParts.push(`Desa ${profile.alamat_desa}`);
+  if (profile.alamat_kecamatan) alamatParts.push(`Kec. ${profile.alamat_kecamatan}`);
   
+  const kabProvParts = [];
+  if (profile.alamat_kabupaten) kabProvParts.push(`Kab. ${profile.alamat_kabupaten}`);
+  if (profile.alamat_provinsi) kabProvParts.push(`Prov. ${profile.alamat_provinsi}`);
+  if (profile.alamat_kode_pos) kabProvParts.push(profile.alamat_kode_pos);
+  
+  if (kabProvParts.length > 0) {
+    alamatParts.push(kabProvParts.join(' '));
+  }
+  
+  const alamat = alamatParts.join(', ');
+  if (alamat) {
+    const splitAlamat = doc.splitTextToSize(alamat, pageWidth - 40);
+    doc.text(splitAlamat, pageWidth / 2, currentY, { align: 'center' });
+    currentY += (splitAlamat.length * 5);
+  }
+  
+  // Kontak
+  const kontakParts = [];
+  if (profile.telepon) kontakParts.push(`Telp: ${profile.telepon}`);
+  if (profile.website) kontakParts.push(`Website: ${profile.website}`);
+  const kontak = kontakParts.join(' | ');
+  if (kontak) {
+    doc.text(kontak, pageWidth / 2, currentY, { align: 'center' });
+    currentY += 5;
+  }
+  
+  currentY += 1; // Spacing before line
+  doc.line(14, currentY, pageWidth - 14, currentY);
+  doc.line(14, currentY + 1, pageWidth - 14, currentY + 1);
+  currentY += 9;
+  
+  // Title
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text(title, pageWidth / 2, 35, { align: 'center' });
+  doc.text(title, pageWidth / 2, currentY, { align: 'center' });
+  currentY += 6;
   
   if (subtitle) {
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(subtitle, pageWidth / 2, 41, { align: 'center' });
+    doc.text(subtitle, pageWidth / 2, currentY, { align: 'center' });
+    currentY += 6;
   }
+  
+  return currentY + 4; // Return the next startY for content
 }
 
 function addOfficialSignatures(doc: jsPDF, profile: any, endY: number) {
@@ -76,16 +139,19 @@ export async function generateDaftarTunggakanPdf(
   const doc = new jsPDF();
   const profile = await getSchoolProfile();
   
-  addHeader(doc, profile, 'LAPORAN TUNGGAKAN SISWA', subtitleFilter);
+  let nextY = addHeader(doc, profile, 'LAPORAN TUNGGAKAN SISWA', subtitleFilter);
   
   // Ringkasan
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Total Keseluruhan Tunggakan : ${formatRupiah(summary.totalTunggakan)}`, 14, 50);
-  doc.text(`Jumlah Siswa Menunggak     : ${summary.countSiswa} Siswa`, 14, 55);
-  doc.text(`Tunggakan SPP              : ${formatRupiah(summary.spp)}`, 110, 50);
-  doc.text(`Tunggakan Pendaftaran      : ${formatRupiah(summary.pendaftaran)}`, 110, 55);
-  doc.text(`Tunggakan Kegiatan         : ${formatRupiah(summary.kegiatan)}`, 110, 60);
+  doc.text(`Total Keseluruhan Tunggakan : ${formatRupiah(summary.totalTunggakan)}`, 14, nextY);
+  doc.text(`Tunggakan SPP              : ${formatRupiah(summary.spp)}`, 110, nextY);
+  nextY += 5;
+  doc.text(`Jumlah Siswa Menunggak     : ${summary.countSiswa} Siswa`, 14, nextY);
+  doc.text(`Tunggakan Pendaftaran      : ${formatRupiah(summary.pendaftaran)}`, 110, nextY);
+  nextY += 5;
+  doc.text(`Tunggakan Kegiatan         : ${formatRupiah(summary.kegiatan)}`, 110, nextY);
+  nextY += 8;
   
   const tableData: any[] = [];
   siswaTunggakan.forEach((s, index) => {
@@ -113,7 +179,7 @@ export async function generateDaftarTunggakanPdf(
   });
   
   autoTable(doc, {
-    startY: 68,
+    startY: nextY,
     head: [['No', 'Nama Siswa', 'Kelas', 'Status', 'Tgk. SPP', 'Tgk. Pendaftaran', 'Tgk. Kegiatan', 'Grand Total']],
     body: tableData,
     foot: [['', '', '', 'Total', formatRupiah(summary.spp), formatRupiah(summary.pendaftaran), formatRupiah(summary.kegiatan), formatRupiah(summary.totalTunggakan)]],
@@ -144,20 +210,23 @@ export async function generateRekapPenerimaanPdf(
   const doc = new jsPDF();
   const profile = await getSchoolProfile();
   
-  addHeader(doc, profile, 'LAPORAN PENERIMAAN', subtitleFilter);
+  let nextY = addHeader(doc, profile, 'LAPORAN PENERIMAAN', subtitleFilter);
   
   // Ringkasan
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Total Penerimaan : ${formatRupiah(summary.total)}`, 14, 50);
+  doc.text(`Total Penerimaan : ${formatRupiah(summary.total)}`, 14, nextY);
+  nextY += 7;
   
-  doc.text(`SPP         : ${formatRupiah(summary.spp)}`, 14, 57);
-  doc.text(`Pendaftaran : ${formatRupiah(summary.pendaftaran)}`, 14, 62);
-  doc.text(`Kegiatan    : ${formatRupiah(summary.kegiatan)}`, 14, 67);
-
-  doc.text(`Tunai    : ${formatRupiah(summary.tunai)}`, 110, 57);
-  doc.text(`Transfer : ${formatRupiah(summary.transfer)}`, 110, 62);
-  doc.text(`Tabungan : ${formatRupiah(summary.tabungan)}`, 110, 67);
+  doc.text(`SPP         : ${formatRupiah(summary.spp)}`, 14, nextY);
+  doc.text(`Tunai    : ${formatRupiah(summary.tunai)}`, 110, nextY);
+  nextY += 5;
+  doc.text(`Pendaftaran : ${formatRupiah(summary.pendaftaran)}`, 14, nextY);
+  doc.text(`Transfer : ${formatRupiah(summary.transfer)}`, 110, nextY);
+  nextY += 5;
+  doc.text(`Kegiatan    : ${formatRupiah(summary.kegiatan)}`, 14, nextY);
+  doc.text(`Tabungan : ${formatRupiah(summary.tabungan)}`, 110, nextY);
+  nextY += 8;
   
   const tableData = transaksiList.map(item => [
     formatTanggal(item.tanggal),
@@ -169,7 +238,7 @@ export async function generateRekapPenerimaanPdf(
   ]);
   
   autoTable(doc, {
-    startY: 75,
+    startY: nextY,
     head: [['Tanggal', 'Nama Siswa', 'Kelas', 'Tagihan', 'Nominal', 'Metode']],
     body: tableData,
     foot: [['', '', '', 'Total', formatRupiah(summary.total), '']],
@@ -200,19 +269,21 @@ export async function generateLaporanPerSiswaPdf(
   const profile = await getSchoolProfile();
   
   const subtitle = [`Tanggal Cetak: ${formatTanggal(new Date().toISOString().substring(0, 10))}`, subtitleFilter].filter(Boolean).join(' | ');
-  addHeader(doc, profile, 'REKAP POSISI KEUANGAN SISWA', subtitle);
+  let nextY = addHeader(doc, profile, 'REKAP POSISI KEUANGAN SISWA', subtitle);
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Nama Siswa : ${siswaData?.nama}`, 14, 48);
-  doc.text(`Kelas      : ${siswaData?.activeClass ? formatKelasLabel(siswaData.activeClass) : '-'}`, 14, 53);
-  doc.text(`Status     : ${siswaData?.status}`, 14, 58);
-
-  doc.text(`Total Tagihan : ${formatRupiah(summary.totalTagihan)}`, 110, 48);
-  doc.text(`Total Dibayar : ${formatRupiah(summary.totalDibayar)}`, 110, 53);
-  doc.text(`Sisa Outstanding : ${formatRupiah(summary.sisaUtang)}`, 110, 58);
+  doc.text(`Nama Siswa : ${siswaData?.nama}`, 14, nextY);
+  doc.text(`Total Tagihan : ${formatRupiah(summary.totalTagihan)}`, 110, nextY);
+  nextY += 5;
+  doc.text(`Kelas      : ${siswaData?.activeClass ? formatKelasLabel(siswaData.activeClass) : '-'}`, 14, nextY);
+  doc.text(`Total Dibayar : ${formatRupiah(summary.totalDibayar)}`, 110, nextY);
+  nextY += 5;
+  doc.text(`Status     : ${siswaData?.status}`, 14, nextY);
+  doc.text(`Sisa Outstanding : ${formatRupiah(summary.sisaUtang)}`, 110, nextY);
+  nextY += 10;
   
-  let currentY = 68;
+  let currentY = nextY;
 
   tagihanList.forEach((t) => {
     const sisa = t.jumlah_total - t.sudah_dibayar;
@@ -287,13 +358,16 @@ export async function generateLaporanPendaftaranPdf(
   const doc = new jsPDF();
   const profile = await getSchoolProfile();
   
-  addHeader(doc, profile, 'REKAP PENERIMAAN SISWA BARU', subtitleFilter);
+  let nextY = addHeader(doc, profile, 'REKAP PENERIMAAN SISWA BARU', subtitleFilter);
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Total Calon Mendaftar : ${summary.totalPendaftar} Anak`, 14, 48);
-  doc.text(`Sudah Diaktifkan      : ${summary.aktif} Anak`, 14, 53);
-  doc.text(`Batal                 : ${summary.batal} Anak`, 14, 58);
+  doc.text(`Total Calon Mendaftar : ${summary.totalPendaftar} Anak`, 14, nextY);
+  nextY += 5;
+  doc.text(`Sudah Diaktifkan      : ${summary.aktif} Anak`, 14, nextY);
+  nextY += 5;
+  doc.text(`Batal                 : ${summary.batal} Anak`, 14, nextY);
+  nextY += 7;
   
   const tableData = calonSiswaList.map((s) => {
     const tagihan = pendaftaranTagihanMap.get(s.id);
@@ -311,7 +385,7 @@ export async function generateLaporanPendaftaranPdf(
   });
   
   autoTable(doc, {
-    startY: 65,
+    startY: nextY,
     head: [['Nama Calon Siswa', 'Tgl Daftar', 'Status Pendaftaran', 'Status Bayar Pendaf.', 'Tgl Aktivasi']],
     body: tableData,
     theme: 'grid',
@@ -330,14 +404,18 @@ export async function generateLaporanAktivasiPdf(
   const doc = new jsPDF();
   const profile = await getSchoolProfile();
 
-  addHeader(doc, profile, 'LAPORAN AKTIVASI (LANJUT TAHUN AJARAN)', subtitleFilter);
+  let nextY = addHeader(doc, profile, 'LAPORAN AKTIVASI (LANJUT TAHUN AJARAN)', subtitleFilter);
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Naik Kelompok       : ${summary.naikKelompok} Siswa`, 14, 48);
-  doc.text(`Tinggal Kelas        : ${summary.tinggalKelas} Siswa`, 14, 53);
-  doc.text(`Lulus                : ${summary.lulus} Siswa`, 14, 58);
-  doc.text(`Tidak Daftar Ulang   : ${summary.tidakDaftarUlang} Siswa`, 14, 63);
+  doc.text(`Naik Kelompok       : ${summary.naikKelompok} Siswa`, 14, nextY);
+  nextY += 5;
+  doc.text(`Tinggal Kelas        : ${summary.tinggalKelas} Siswa`, 14, nextY);
+  nextY += 5;
+  doc.text(`Lulus                : ${summary.lulus} Siswa`, 14, nextY);
+  nextY += 5;
+  doc.text(`Tidak Daftar Ulang   : ${summary.tidakDaftarUlang} Siswa`, 14, nextY);
+  nextY += 7;
 
   const tableData = aktivasiList.map((item) => [
     item.siswa?.nama || '-',
@@ -354,7 +432,7 @@ export async function generateLaporanAktivasiPdf(
   ]);
 
   autoTable(doc, {
-    startY: 70,
+    startY: nextY,
     head: [['Nama Siswa', 'Kelompok Asal', 'Kelompok Baru', 'Kategori', 'Tanggal', 'Detail']],
     body: tableData,
     theme: 'grid',
@@ -373,7 +451,7 @@ export async function generateLaporanAuditPdf(
   const doc = new jsPDF();
   const profile = await getSchoolProfile();
   
-  addHeader(doc, profile, 'LOG AUDIT SISTEM', subtitleFilter);
+  let nextY = addHeader(doc, profile, 'LOG AUDIT SISTEM', subtitleFilter);
   
   const tableData = auditLogs.map((log) => {
     const admin = akunMap.get(log.user_id) || 'Sistem';
@@ -393,7 +471,7 @@ export async function generateLaporanAuditPdf(
   });
   
   autoTable(doc, {
-    startY: 48,
+    startY: nextY,
     head: [['Timestamp', 'Admin', 'Jenis Aksi', 'Modul', 'Nama Siswa', 'Nomor Tagihan', 'Nilai Sebelum → Sesudah']],
     body: tableData,
     theme: 'grid',
@@ -415,7 +493,6 @@ export async function generateLaporanAuditPdf(
 }
 
 export async function generateKwitansiPdf(group: any) {
-  // Same as before
   const doc = new jsPDF();
   const profile = await getSchoolProfile();
   
@@ -423,12 +500,11 @@ export async function generateKwitansiPdf(group: any) {
   const receiptNo = group.first?.no_kuitansi || `KW-${group.groupId.substring(0, 8).toUpperCase()}`;
   const subtitle = `No: ${receiptNo}`;
   
-  addHeader(doc, profile, title, subtitle);
+  let startY = addHeader(doc, profile, title, subtitle);
   
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   
-  const startY = 55;
   const lineSpacing = 8;
   
   doc.text('Telah terima dari', 14, startY);
@@ -502,13 +578,16 @@ export async function generateLaporanDaftarUlangPdf(
 ) {
   const doc = new jsPDF();
   const profile = await getSchoolProfile();
-  addHeader(doc, profile, 'LAPORAN DAFTAR ULANG', subtitleFilter);
+  let nextY = addHeader(doc, profile, 'LAPORAN DAFTAR ULANG', subtitleFilter);
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Total Daftar Ulang : ${summary.total} Siswa`, 14, 48);
-  doc.text(`Lunas              : ${summary.lunas} Siswa`, 14, 53);
-  doc.text(`Belum Lunas        : ${summary.belum} Siswa`, 14, 58);
+  doc.text(`Total Daftar Ulang : ${summary.total} Siswa`, 14, nextY);
+  nextY += 5;
+  doc.text(`Lunas              : ${summary.lunas} Siswa`, 14, nextY);
+  nextY += 5;
+  doc.text(`Belum Lunas        : ${summary.belum} Siswa`, 14, nextY);
+  nextY += 7;
 
   const tableData = duTagihan.map((t: any) => {
     const siswa = siswaMap.get(t.siswa_id);
@@ -529,7 +608,7 @@ export async function generateLaporanDaftarUlangPdf(
   });
 
   autoTable(doc, {
-    startY: 65,
+    startY: nextY,
     head: [['Nama Siswa', 'Kelompok Asal', 'Kelompok Baru', 'Status', 'Nominal', 'Tanggal Bayar']],
     body: tableData,
     theme: 'grid',
@@ -559,18 +638,21 @@ export async function generateLaporanDiskonPdf(
 ) {
   const doc = new jsPDF();
   const profile = await getSchoolProfile();
-  addHeader(doc, profile, 'LAPORAN DISKON', subtitleFilter);
+  let nextY = addHeader(doc, profile, 'LAPORAN DISKON', subtitleFilter);
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Total Diskon           : ${formatRupiah(summary.totalDiskon)}`, 14, 48);
-  doc.text(`Diskon Promo           : ${formatRupiah(summary.totalDiskonPromo)}`, 14, 53);
-  doc.text(`Potongan Manual        : ${formatRupiah(summary.totalDiskonManual)}`, 14, 58);
-  doc.text(`Siswa Penerima         : ${summary.siswaPenerima} Siswa`, 110, 48);
-  doc.text(`Jenis Promo Aktif      : ${summary.promoAktif} Promo`, 110, 53);
-  doc.text(`Rata-rata Diskon       : ${formatRupiah(summary.rataRata)}`, 110, 58);
+  doc.text(`Total Diskon           : ${formatRupiah(summary.totalDiskon)}`, 14, nextY);
+  doc.text(`Siswa Penerima         : ${summary.siswaPenerima} Siswa`, 110, nextY);
+  nextY += 5;
+  doc.text(`Diskon Promo           : ${formatRupiah(summary.totalDiskonPromo)}`, 14, nextY);
+  doc.text(`Jenis Promo Aktif      : ${summary.promoAktif} Promo`, 110, nextY);
+  nextY += 5;
+  doc.text(`Potongan Manual        : ${formatRupiah(summary.totalDiskonManual)}`, 14, nextY);
+  doc.text(`Rata-rata Diskon       : ${formatRupiah(summary.rataRata)}`, 110, nextY);
+  nextY += 10;
 
-  let currentY = 68;
+  let currentY = nextY;
 
   if (summary.breakdownPromo.size > 0) {
     const promoData = Array.from(summary.breakdownPromo.entries())

@@ -18,7 +18,7 @@ import { useConfirmStore } from '../store/confirmStore';
 
 // ===================== Types =====================
 
-type StepId = 'mode' | 'profil' | 'tahun' | 'tingkat' | 'biaya' | 'metode' | 'diskon' | 'nis' | 'review';
+type StepId = 'mode' | 'profil' | 'tahun' | 'tingkat' | 'biaya' | 'metode' | 'diskon' | 'nis' | 'keamanan' | 'review';
 type ValidationIssue = { message: string; fieldId?: string; stepIndex?: number };
 
 const steps: Array<{ id: StepId; label: string; description: string }> = [
@@ -30,6 +30,7 @@ const steps: Array<{ id: StepId; label: string; description: string }> = [
   { id: 'metode', label: 'Metode & Tagihan', description: 'Master global' },
   { id: 'diskon', label: 'Promo / Diskon', description: 'Potongan harga' },
   { id: 'nis', label: 'Format NIS', description: 'Nomor induk siswa' },
+  { id: 'keamanan', label: 'Keamanan', description: 'Akses lokal' },
   { id: 'review', label: 'Review', description: 'Cek lalu simpan' },
 ];
 
@@ -223,14 +224,15 @@ export default function SetupAwalPage() {
   const [metodePembayaran, setMetodePembayaran] = useState(sanitizeMetode(initialDraft?.metodePembayaran));
   const [jenisTagihan, setJenisTagihan] = useState(sanitize(initialDraft?.jenisTagihan, defaultJenisTagihan));
 
-
+  const [keamananPin, setKeamananPin] = useState(initialDraft?.keamananPin ?? '');
+  const [keamananSandi, setKeamananSandi] = useState(initialDraft?.keamananSandi ?? '');
 
   const currentStep = steps[stepIndex];
 
   // Save draft on every state change
   useEffect(() => {
-    saveSetupAwalDraft({ mode, profile, year, tingkatRows, cutoff, sppCutoff, pendaftaranDiLuarSistem, komponenBiaya, modeTagihanBiaya, jatuhTempoPendaftaran, diskon, formatNIS, metodePembayaran, jenisTagihan, stepIndex, maxStepReached });
-  }, [mode, profile, year, tingkatRows, cutoff, sppCutoff, pendaftaranDiLuarSistem, komponenBiaya, modeTagihanBiaya, jatuhTempoPendaftaran, diskon, formatNIS, metodePembayaran, jenisTagihan, stepIndex, maxStepReached]);
+    saveSetupAwalDraft({ mode, profile, year, tingkatRows, cutoff, sppCutoff, pendaftaranDiLuarSistem, komponenBiaya, modeTagihanBiaya, jatuhTempoPendaftaran, diskon, formatNIS, keamananPin, keamananSandi, metodePembayaran, jenisTagihan, stepIndex, maxStepReached });
+  }, [mode, profile, year, tingkatRows, cutoff, sppCutoff, pendaftaranDiLuarSistem, komponenBiaya, modeTagihanBiaya, jatuhTempoPendaftaran, diskon, formatNIS, keamananPin, keamananSandi, metodePembayaran, jenisTagihan, stepIndex, maxStepReached]);
 
   // ===================== Tingkat/Kelas CRUD =====================
 
@@ -411,6 +413,13 @@ export default function SetupAwalPage() {
     return null;
   }
 
+  function validateKeamanan(): ValidationIssue | null {
+    if (!keamananPin || keamananPin.length < 4) return issue('PIN Kasir wajib diisi minimal 4 angka.', 'keamanan_pin', 8);
+    if (!/^\d+$/.test(keamananPin)) return issue('PIN Kasir hanya boleh berisi angka.', 'keamanan_pin', 8);
+    if (!keamananSandi || keamananSandi.length < 6) return issue('Sandi Darurat wajib diisi minimal 6 karakter.', 'keamanan_sandi', 8);
+    return null;
+  }
+
   function validateMetode(): ValidationIssue | null {
     if (!metodePembayaran.some((i) => i.aktif && i.nama.trim())) return issue('Minimal satu metode pembayaran aktif.', `metode_nama_${metodePembayaran[0]?.id ?? 0}`, 5);
     const mn = new Set<string>();
@@ -434,13 +443,13 @@ export default function SetupAwalPage() {
   function validateStep(stepId: StepId) {
     const validators: Record<StepId, () => ValidationIssue | null> = {
       mode: validateMode, profil: validateProfile, tahun: validateYear, tingkat: validateTingkat, biaya: validateBiaya,
-      metode: validateMetode, diskon: validateDiskon, nis: validateNIS, review: validateAll,
+      metode: validateMetode, diskon: validateDiskon, nis: validateNIS, keamanan: validateKeamanan, review: validateAll,
     };
     return validators[stepId]();
   }
 
   function validateAll() {
-    return validateMode() || validateProfile() || validateYear() || validateTingkat() || validateBiaya() || validateMetode() || validateDiskon() || validateNIS();
+    return validateMode() || validateProfile() || validateYear() || validateTingkat() || validateBiaya() || validateMetode() || validateDiskon() || validateNIS() || validateKeamanan();
   }
 
   function validateUntilStep(targetIndex: number) {
@@ -1133,7 +1142,27 @@ export default function SetupAwalPage() {
     );
   }
 
-  // ===================== Step 8: Review =====================
+  // ===================== Step 8: Keamanan =====================
+
+  function renderKeamananStep() {
+    return (
+      <div className="space-y-5">
+        <div className="rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-sm text-brand-700 dark:border-brand-950/50 dark:bg-brand-950/20 dark:text-brand-300">
+          <strong>Penting:</strong> Ubah sandi bawaan untuk mencegah akses tidak sah ke data lokal di laptop ini saat offline.
+        </div>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <FormField label="PIN Kasir (Akses cepat transaksi)" htmlFor="keamanan_pin" error={fieldErrors.keamanan_pin} hint="Minimal 4 angka. Bawaan: 123456">
+            <input id="keamanan_pin" type="password" inputMode="numeric" pattern="[0-9]*" value={keamananPin} onChange={(e) => setKeamananPin(e.target.value)} placeholder="Contoh: 123456" className={inputClassFor('keamanan_pin')} />
+          </FormField>
+          <FormField label="Sandi Darurat (Akses penuh saat offline)" htmlFor="keamanan_sandi" error={fieldErrors.keamanan_sandi} hint="Minimal 6 karakter. Bawaan: doomsday123">
+            <input id="keamanan_sandi" type="password" value={keamananSandi} onChange={(e) => setKeamananSandi(e.target.value)} placeholder="Contoh: doomsday123" className={inputClassFor('keamanan_sandi')} />
+          </FormField>
+        </div>
+      </div>
+    );
+  }
+
+  // ===================== Step 9: Review =====================
 
   function renderReviewStep() {
     const validTingkat = tingkatRows.filter((t) => t.nama.trim());
@@ -1195,13 +1224,48 @@ export default function SetupAwalPage() {
     if (currentStep.id === 'metode') return renderMetodeStep();
     if (currentStep.id === 'diskon') return renderDiskonStep();
     if (currentStep.id === 'nis') return renderNISStep();
+    if (currentStep.id === 'keamanan') return renderKeamananStep();
     return renderReviewStep();
   }
 
   // ===================== Shell =====================
 
+  const [isRestoring, setIsRestoring] = useState(false);
+
   return (
-    <form className="mx-auto w-full max-w-7xl rounded-3xl border border-slate-200 bg-white/90 shadow-soft animate-fade-in dark:border-slate-800 dark:bg-slate-950/80" onSubmit={handleSubmit}>
+    <>
+      <div className="mx-auto w-full max-w-7xl mb-4 text-right">
+        {isRestoring ? (
+          <span className="text-sm font-bold text-slate-500 flex items-center justify-end gap-2">
+            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Sedang memulihkan data...
+          </span>
+        ) : (
+          <label className="cursor-pointer text-sm font-bold text-brand-600 hover:text-brand-500 underline">
+            Atau pulihkan dari backup lokal
+            <input type="file" accept=".json" className="hidden" onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setIsRestoring(true);
+              try {
+                // Beri jeda sedikit agar UI sempat me-render state loading
+                await new Promise(resolve => setTimeout(resolve, 100));
+                const { restoreRawBackup } = await import('../services/localBackupService');
+                await restoreRawBackup(file);
+                alert('Restore berhasil! Halaman akan dimuat ulang.');
+                window.location.href = '/';
+              } catch (err) {
+                alert('Gagal restore: ' + (err as Error).message);
+                setIsRestoring(false);
+              }
+            }} />
+          </label>
+        )}
+      </div>
+      <form className="mx-auto w-full max-w-7xl rounded-3xl border border-slate-200 bg-white/90 shadow-soft animate-fade-in dark:border-slate-800 dark:bg-slate-950/80" onSubmit={handleSubmit}>
       <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-800 md:px-6">
         {/* Mobile stepper */}
         <div className="md:hidden">
@@ -1258,5 +1322,6 @@ export default function SetupAwalPage() {
         {currentStep.id === 'review' ? <button type="button" onClick={handleSave} disabled={isSubmitting} className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-brand-500 disabled:opacity-60"><Save className="h-4 w-4" />{isSubmitting ? 'Menyimpan...' : 'Simpan Setup'}</button> : <button type="button" onClick={goNext} disabled={isSubmitting} className="rounded-xl bg-brand-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-brand-500 disabled:opacity-60">Lanjut</button>}
       </div>
     </form>
+  </>
   );
 }

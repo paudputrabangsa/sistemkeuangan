@@ -2,13 +2,14 @@ import { db } from '../db';
 import type { Siswa, SiswaKelas, Tagihan } from '../db/types';
 import { assertCanAccess } from './permissionService';
 import { NotFoundError, ValidationError } from './service-errors';
-import { calculateAgeInYears, enqueueSync, getTahunAjaranCutoffDate, newId, nowIso, toPendingInsert, toPendingUpdate, type ServiceActor } from './service-helpers';
+import { calculateAgeInYears, enqueueSync, getTahunAjaranCutoffDate, nowIso, toPendingInsert, toPendingUpdate, type ServiceActor } from './service-helpers';
 import { getAutoPlacementPreview, getPenempatanSiswaBaruSetting } from './placementService';
 import { getPengaturanPendaftaranByTahunAjaran } from './pendaftaranTahunAjaranService';
 import { assertKelasHasCapacity } from './kelasCapacityService';
 import { assertSiswaPeriodNotArchived, assertTahunAjaranNotArchived } from './tahunAjaranLockService';
 import { ReferenceGeneratorService } from './referenceGeneratorService';
 import { catatAuditLog } from './auditLogService';
+import { generateDeterministicUUID } from '../lib/uuid';
 
 type JenisMasuk = Siswa['jenis_masuk'];
 type JalurRegistrasiNormal = Extract<Siswa['jalur_registrasi'], 'baru' | 'pindahan' | 'migrasi'>;
@@ -222,7 +223,7 @@ async function buildPendaftaranTagihan(
   opsi: 'full' | 'cicil',
 ) {
   return toPendingInsert<Tagihan>({
-    id: newId(),
+    id: generateDeterministicUUID(`tagihan|${siswaId}|pendaftaran|${tahunAjaranId}`),
     no_referensi: await ReferenceGeneratorService.generateNoTagihan(tahunAjaranId),
     siswa_id: siswaId,
     tahun_ajaran_id: tahunAjaranId,
@@ -255,7 +256,7 @@ function buildSiswaKelas(
 ) {
   const now = nowIso();
   return toPendingInsert<SiswaKelas>({
-    id: newId(),
+    id: generateDeterministicUUID(`siswakelas|${siswaId}|${kelasId}|${mulai}`),
     siswa_id: siswaId,
     kelas_id: kelasId,
     mulai,
@@ -350,7 +351,7 @@ export async function registerSiswa(actor: ServiceActor, rawInput: RegisterSiswa
   if (input.kelas_tujuan_id) {
     await assertKelasHasCapacity(input.kelas_tujuan_id);
   }
-  const siswaId = newId();
+  const siswaId = generateDeterministicUUID(`siswa|${input.nama.toLowerCase()}|${input.nama_wali.toLowerCase()}|${input.tanggal_lahir || ''}`);
   const now = nowIso();
 
   const siswa = toPendingInsert<Siswa>({
@@ -460,8 +461,9 @@ export async function importSiswaCalon(actor: ServiceActor, input: ImportSiswaCa
         }
 
         const now = nowIso();
+        const siswaId = generateDeterministicUUID(`siswa|${row.nama.toLowerCase()}|${row.nama_wali.toLowerCase()}|${row.tanggal_lahir || ''}`);
         const siswa = toPendingInsert<Siswa>({
-          id: newId(),
+          id: siswaId,
           nama: row.nama,
           tanggal_lahir: row.tanggal_lahir ?? null,
           jenis_kelamin: row.jenis_kelamin ?? null,
@@ -541,8 +543,9 @@ export async function migrateSiswaManual(actor: ServiceActor, rawInput: MigrateS
       await assertKelasHasCapacity(input.kelas_tujuan_id);
     }
   }
+  const siswaId = generateDeterministicUUID(`siswa|${input.nama.toLowerCase()}|${input.nama_wali.toLowerCase()}|${input.tanggal_lahir || ''}`);
   const siswa = toPendingInsert<Siswa>({
-    id: newId(),
+    id: siswaId,
     nama: input.nama,
     tanggal_lahir: input.tanggal_lahir ?? null,
     jenis_kelamin: input.jenis_kelamin ?? null,
@@ -620,6 +623,13 @@ export async function importSiswaMigrasi(actor: ServiceActor, input: ImportSiswa
 
 export async function getSiswaAutoPlacementPreview(tanggalLahir: string | null | undefined, tahunAjaranTargetId: string | null | undefined) {
   return getAutoPlacementPreview(tanggalLahir, tahunAjaranTargetId);
+}
+
+export async function generateKodeImportSiswa(prefix: string = 'IMP'): Promise<string> {
+  const settings = await db.pengaturan.where('kunci').equals('kode_perangkat').first();
+  const kodePerangkat = settings?.nilai?.kode || '00';
+  const count = await db.siswa.count();
+  return `${prefix}-${kodePerangkat}-${Date.now()}-${count + 1}`;
 }
 
 export async function updateSiswa(actor: ServiceActor, siswaId: string, input: UpdateSiswaInput) {

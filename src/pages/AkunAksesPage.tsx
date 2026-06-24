@@ -192,6 +192,68 @@ export default function AkunAksesPage() {
         </SectionCard>
       )}
 
+      {tab === 'akun' && (
+        <SectionCard title="Keamanan Akses Lokal" description="Ubah kata sandi darurat dan PIN kasir untuk penggunaan offline.">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Form PIN Kasir */}
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const pin = new FormData(e.currentTarget).get('pin') as string;
+              if (pin.length < 4) return addToast({ type: 'error', title: 'Gagal', message: 'PIN minimal 4 angka' });
+              
+              setLoading(true);
+              try {
+                const { setPinKasir } = await import('../services/authService');
+                await setPinKasir(pin);
+                addToast({ type: 'success', title: 'Berhasil', message: 'PIN Kasir berhasil diubah' });
+                (e.target as HTMLFormElement).reset();
+              } catch (err: any) {
+                addToast({ type: 'error', title: 'Gagal', message: err.message });
+              } finally {
+                setLoading(false);
+              }
+            }} className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-900/30">
+              <div>
+                <h3 className="font-bold mb-1">PIN Kasir</h3>
+                <p className="text-xs text-slate-500 mb-4">Gunakan angka yang mudah diingat (min 4 digit). Bawaan: 123456</p>
+                <input required name="pin" type="password" inputMode="numeric" pattern="[0-9]*" placeholder="Masukkan PIN baru" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-700 mb-3" />
+                <button type="submit" disabled={loading} className="w-full rounded-xl bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-500 disabled:opacity-50">
+                  Ubah PIN Kasir
+                </button>
+              </div>
+            </form>
+
+            {/* Form Sandi Darurat */}
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const sandi = new FormData(e.currentTarget).get('sandi') as string;
+              if (sandi.length < 6) return addToast({ type: 'error', title: 'Gagal', message: 'Sandi minimal 6 karakter' });
+              
+              setLoading(true);
+              try {
+                const { setSandiDarurat } = await import('../services/authService');
+                await setSandiDarurat(sandi);
+                addToast({ type: 'success', title: 'Berhasil', message: 'Sandi Darurat berhasil diubah' });
+                (e.target as HTMLFormElement).reset();
+              } catch (err: any) {
+                addToast({ type: 'error', title: 'Gagal', message: err.message });
+              } finally {
+                setLoading(false);
+              }
+            }} className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-900/30">
+              <div>
+                <h3 className="font-bold mb-1">Sandi Darurat</h3>
+                <p className="text-xs text-slate-500 mb-4">Gunakan password yang kuat (min 6 karakter). Bawaan: doomsday123</p>
+                <input required name="sandi" type="password" placeholder="Masukkan Sandi Darurat baru" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:bg-slate-900 dark:border-slate-700 mb-3" />
+                <button type="submit" disabled={loading} className="w-full rounded-xl bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-500 disabled:opacity-50">
+                  Ubah Sandi Darurat
+                </button>
+              </div>
+            </form>
+          </div>
+        </SectionCard>
+      )}
+
       {tab === 'permission' && (
         <SectionCard title="Permission" description="Hak akses admin dan role berikutnya akan dikonfigurasi di tab ini.">
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center text-sm font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-400">

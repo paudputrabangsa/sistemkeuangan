@@ -73,7 +73,7 @@ const toneStyles: Record<SummaryTone, { accent: string; badge: string; highlight
 };
 
 export function SummaryGroupGrid({ children, className = '' }: SummaryGroupGridProps) {
-  return <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${className}`.trim()}>{children}</div>;
+  return <div className={`grid grid-cols-1 gap-4 xl:grid-cols-2 ${className}`.trim()}>{children}</div>;
 }
 
 export function SummaryGroupCard({ title, children, className = '', tone = 'brand', variant = 'default', layout = 'row' }: SummaryGroupCardProps) {
@@ -91,7 +91,7 @@ export function SummaryGroupCard({ title, children, className = '', tone = 'bran
   }
 
   const childrenContainer = layout === 'mini'
-    ? 'mt-5 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-3'
+    ? 'mt-5 flex flex-wrap gap-y-6 gap-x-8'
     : variant === 'receipt'
     ? 'mt-3 divide-y divide-dashed divide-slate-200 dark:divide-slate-800'
     : 'mt-4 space-y-2';
@@ -118,9 +118,9 @@ export function SummaryGroupRow({ label, value, highlight = false, valueClassNam
 
 export function SummaryGroupMiniCard({ label, value, highlight = false, valueClassName = '' }: SummaryGroupMiniCardProps) {
   return (
-    <div className={`flex flex-col justify-start transition-all duration-200 ${highlight ? 'scale-[1.02] origin-left' : ''}`.trim()}>
+    <div className={`flex flex-col justify-start transition-all duration-200 min-w-[120px] ${highlight ? 'scale-[1.02] origin-left' : ''}`.trim()}>
       <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">{label}</p>
-      <p className={`mt-1 font-black tabular-nums tracking-tight ${highlight ? 'text-2xl text-brand-600 dark:text-brand-400' : 'text-xl text-slate-800 dark:text-slate-100'} ${valueClassName}`.trim()}>{value}</p>
+      <p className={`mt-1 font-black tabular-nums tracking-tight truncate ${highlight ? 'text-2xl text-brand-600 dark:text-brand-400' : 'text-xl text-slate-800 dark:text-slate-100'} ${valueClassName}`.trim()} title={typeof value === 'string' ? value : undefined}>{value}</p>
     </div>
   );
 }

@@ -55,7 +55,38 @@ export default function ResetDataPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <PageHeader title="Reset Data" description="Area berisiko tinggi. Hapus data operasional atau seluruh data aplikasi." />
+      <PageHeader title="Reset Data & Backup" description="Area manajemen data lokal: Buat cadangan (backup) atau hapus seluruh data aplikasi." />
+
+      {/* Backup Data Lokal */}
+      <SectionCard
+        title="Backup Data Lokal"
+        description="Buat cadangan seluruh data lokal ke dalam file untuk keperluan keamanan atau sebelum melakukan reset."
+      >
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button
+            type="button"
+            onClick={async () => {
+              const { createRawBackup } = await import('../services/localBackupService');
+              await createRawBackup();
+              addToast({ type: 'success', title: 'Berhasil', message: 'File backup JSON berhasil dibuat.' });
+            }}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-500"
+          >
+            Backup Raw (JSON)
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              const { createHumanReadableBackup } = await import('../services/localBackupService');
+              await createHumanReadableBackup();
+              addToast({ type: 'success', title: 'Berhasil', message: 'File backup Excel berhasil dibuat.' });
+            }}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-5 py-3 text-sm font-extrabold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            Export Laporan (Excel)
+          </button>
+        </div>
+      </SectionCard>
 
       {/* Reset ke Setup Awal */}
       <SectionCard

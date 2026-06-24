@@ -124,9 +124,18 @@ function validateSetupDraft(draft: SetupAwalDraft) {
     if (billTypeKeys.has(key)) throw new ValidationError(`Jenis tagihan duplikat: ${item.nama}.`);
     billTypeKeys.add(key);
   }
-}
 
-// ===================== Save Setup =====================
+  // --- Keamanan ---
+  if (!draft.keamananPin || draft.keamananPin.length < 4) {
+    throw new ValidationError('PIN Kasir wajib diisi minimal 4 angka.');
+  }
+  if (!/^\d+$/.test(draft.keamananPin)) {
+    throw new ValidationError('PIN Kasir hanya boleh berisi angka.');
+  }
+  if (!draft.keamananSandi || draft.keamananSandi.length < 6) {
+    throw new ValidationError('Sandi Darurat wajib diisi minimal 6 karakter.');
+  }
+}
 
 export async function completeSetupAwal(actor: ServiceActor, draft: SetupAwalDraft) {
   await ensureLoginBootstrap();
@@ -338,6 +347,10 @@ export async function completeSetupAwal(actor: ServiceActor, draft: SetupAwalDra
 
     await markSetupAwalCompleted();
   });
+
+  const { setPinKasir, setSandiDarurat } = await import('./authService');
+  await setPinKasir(draft.keamananPin);
+  await setSandiDarurat(draft.keamananSandi);
 
   return { year, tingkatRecords, kelasRecords, registration };
 }

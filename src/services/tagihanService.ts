@@ -8,7 +8,6 @@ import {
   getActiveSiswaKelasBySiswaId,
   getSppEffectiveStartMonth,
   monthKeyFromDate,
-  newId,
   nowIso,
   startOfMonth,
   toPendingInsert,
@@ -19,6 +18,7 @@ import type { SppGenerateCutoffSetting } from '../db/types';
 import { assertSiswaPeriodNotArchived, assertTagihanPeriodNotArchived } from './tahunAjaranLockService';
 import { catatAuditLog } from './auditLogService';
 import { getPromoValue } from '../lib/promoHelper';
+import { generateDeterministicUUID } from '../lib/uuid';
 
 export interface GenerateSppInput {
   bulan_mulai: string;
@@ -236,7 +236,7 @@ export async function previewGenerateSpp(actor: ServiceActor, input: GenerateSpp
       jumlahTotal = Math.max(0, jumlahTotal - totalPromoDiscount);
 
       const tagihan = toPendingInsert<Tagihan>({
-        id: newId(),
+        id: generateDeterministicUUID(`tagihan|${siswa.id}|spp|${bulan}`),
         siswa_id: siswa.id,
         tahun_ajaran_id: kelas.tahun_ajaran_id,
         jenis: 'spp',
@@ -352,7 +352,7 @@ export async function previewGenerateDaftarUlang(actor: ServiceActor, input: Gen
       .reduce((sum, t) => sum + Math.max(0, t.jumlah_total - t.sudah_dibayar), 0);
 
     const tagihan = toPendingInsert<Tagihan>({
-      id: newId(),
+      id: generateDeterministicUUID(`tagihan|${siswa.id}|daftar_ulang|${input.tahun_ajaran_id}`),
       siswa_id: siswa.id,
       tahun_ajaran_id: input.tahun_ajaran_id,
       jenis: 'daftar_ulang',
@@ -503,7 +503,7 @@ export async function previewManualTagihan(actor: ServiceActor, input: ManualTag
     jumlahTotal = Math.max(0, jumlahTotal - totalPromoDiscount);
 
     const tagihan = toPendingInsert<Tagihan>({
-      id: newId(),
+      id: generateDeterministicUUID(`tagihan|${siswa.id}|${input.jenis.toLowerCase()}|${tagihanYearId}|${input.nama_tagihan.trim().toLowerCase()}`),
       siswa_id: siswa.id,
       tahun_ajaran_id: tagihanYearId,
       jenis: input.jenis,

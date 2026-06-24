@@ -188,11 +188,14 @@ export interface Pembayaran extends BaseEntity {
 
 export interface SyncQueue {
   id?: number; // Auto increment local PK
+  group_id?: string | null; // Identifier for atomic grouping
   tabel: string; // Name of table: 'siswa', 'tagihan', etc.
   record_id: string; // uuid of record that changed
   aksi: 'insert' | 'update' | 'delete';
   payload: any; // JSON representation of full record
   retry_count: number; // default 0
+  status?: 'pending' | 'failed'; // Sync status
+  error_message?: string | null; // Error message if rejected by server
   created_at: string; // ISO date-time string
 }
 
@@ -269,4 +272,8 @@ export interface SppGenerateCutoffSetting {
   aktif: boolean;
   cutoff_tanggal: number;
   keterangan: string;
+}
+
+export interface KodePerangkatSetting {
+  kode: string;
 }

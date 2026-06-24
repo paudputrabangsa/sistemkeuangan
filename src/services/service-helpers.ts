@@ -59,6 +59,7 @@ export async function enqueueSync(
     aksi,
     payload,
     retry_count: 0,
+    status: 'pending',
     created_at: nowIso(),
   });
 }

@@ -22,17 +22,21 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
+import SyncQueueManager from '../components/ui/SyncQueueManager';
+
 type NavigationItem = { name: string; href?: string; icon: LucideIcon; children?: Array<{ name: string; href: string; disabled?: boolean }> };
 
 export default function AppShell() {
-  const { user, logout, isOffline, setOfflineStatus } = useAuthStore();
+  const { user, logout, isOffline, setOfflineStatus, forceOffline, toggleForceOffline } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [desktopSidebarHidden, setDesktopSidebarHidden] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [isQueueManagerOpen, setQueueManagerOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
   const location = useLocation();
   const navigate = useNavigate();
-  const pendingSyncCount = useLiveQuery(async () => db.sync_queue.count(), [], 0);
+  const pendingSyncCount = useLiveQuery(async () => db.sync_queue.where('status').equals('pending').count(), [], 0);
+  const failedSyncCount = useLiveQuery(async () => db.sync_queue.where('status').equals('failed').count(), [], 0);
   const setupStatus = useLiveQuery(() => getSetupStatus(), [], null);
   const schoolProfile = useLiveQuery(
     async () => db.profil_sekolah.get('00000000-0000-0000-0000-000000000001'),
@@ -44,15 +48,22 @@ export default function AppShell() {
     [],
     null,
   );
+  const lastBackup = useLiveQuery(
+    async () => db.pengaturan.where('kunci').equals('last_local_backup_date').first(),
+    [],
+    null,
+  );
 
   // Listen to connection changes as per PRD
   useEffect(() => {
     const handleOnline = () => {
       setOfflineStatus(false);
-      import('../services/syncService').then(({ pushSync, pullSync }) => {
-        pushSync();
-        pullSync();
-      });
+      // Hanya auto-sync kalau tidak dalam forceOffline mode
+      if (!useAuthStore.getState().forceOffline) {
+        import('../services/syncService').then(({ triggerFullSync }) => {
+          triggerFullSync();
+        });
+      }
     };
     const handleOffline = () => setOfflineStatus(true);
 
@@ -64,10 +75,11 @@ export default function AppShell() {
 
     // Background sync interval every 30 seconds
     const interval = setInterval(() => {
-      if (navigator.onLine) {
-        import('../services/syncService').then(({ pushSync, pullSync }) => {
-          pushSync();
-          pullSync();
+      // Baca state terbaru untuk memastikan kita tidak sync saat offline dipaksa
+      const state = useAuthStore.getState();
+      if (navigator.onLine && !state.forceOffline) {
+        import('../services/syncService').then(({ triggerFullSync }) => {
+          triggerFullSync();
         });
       }
     }, 30000);
@@ -317,25 +329,30 @@ export default function AppShell() {
             </div>
 
             <div className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
-              <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50/90 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/70">
+              <button onClick={() => { if (failedSyncCount > 0) setQueueManagerOpen(true); }} className={`inline-flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50/90 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/70 ${failedSyncCount > 0 ? 'cursor-pointer hover:bg-danger-50 dark:hover:bg-danger-950/20 hover:border-danger-200 transition' : 'cursor-default'}`}>
                 <RefreshCw className={`h-4 w-4 text-slate-400 ${pendingSyncCount > 0 && !isOffline ? 'animate-spin text-brand-500' : ''}`} />
-                <span className="text-xs font-extrabold text-slate-600 dark:text-slate-300">{pendingSyncCount > 0 ? `${pendingSyncCount} pending` : 'Synced'}</span>
-              </div>
+                <span className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                  {pendingSyncCount > 0 ? `${pendingSyncCount} pending` : failedSyncCount > 0 ? <span className="text-danger-500">{failedSyncCount} gagal sync</span> : 'Synced'}
+                </span>
+              </button>
 
-              {isOffline ? (
-                <span className="inline-flex items-center gap-2 rounded-2xl border border-danger-100 bg-danger-50 px-3 py-2 text-xs font-extrabold text-danger-700 dark:border-danger-950/30 dark:bg-danger-950/20 dark:text-danger-400">
-                  <WifiOff className="h-4 w-4" /> Offline
-                </span>
+              {isOffline || forceOffline ? (
+                <button type="button" onClick={toggleForceOffline} title="Klik untuk mematikan Mode Offline Paksa" className="inline-flex items-center gap-2 rounded-2xl border border-danger-100 bg-danger-50 px-3 py-2 text-xs font-extrabold text-danger-700 transition hover:bg-danger-100 dark:border-danger-950/30 dark:bg-danger-950/20 dark:text-danger-400 dark:hover:bg-danger-950/40">
+                  <WifiOff className="h-4 w-4" /> {forceOffline ? 'Offline (Paksa)' : 'Offline'}
+                </button>
               ) : (
-                <span className="inline-flex items-center gap-2 rounded-2xl border border-success-100 bg-success-50 px-3 py-2 text-xs font-extrabold text-success-700 dark:border-success-950/30 dark:bg-success-950/20 dark:text-success-400">
+                <button type="button" onClick={toggleForceOffline} title="Klik untuk mengaktifkan Mode Offline Paksa" className="inline-flex items-center gap-2 rounded-2xl border border-success-100 bg-success-50 px-3 py-2 text-xs font-extrabold text-success-700 transition hover:bg-success-100 dark:border-success-950/30 dark:bg-success-950/20 dark:text-success-400 dark:hover:bg-success-950/40">
                   <Wifi className="h-4 w-4" /> Online
-                </span>
+                </button>
               )}
 
               <div className="relative">
                 <button type="button" onClick={() => setAccountMenuOpen((current) => !current)} className="inline-flex items-center gap-2 rounded-2xl bg-transparent px-1.5 py-1.5 transition hover:bg-slate-100 dark:hover:bg-slate-900" aria-expanded={accountMenuOpen} aria-label="Menu akun">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-extrabold text-brand-700 dark:bg-brand-950/50 dark:text-brand-300">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-extrabold text-brand-700 dark:bg-brand-950/50 dark:text-brand-300 relative">
                     {(user?.nama || 'A').slice(0, 2).toUpperCase()}
+                    {(!lastBackup || lastBackup.nilai?.date ? Math.floor((Date.now() - new Date(lastBackup?.nilai?.date || 0).getTime()) / 86400000) > 7 : true) && (
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3 rounded-full bg-danger-500 border-2 border-white dark:border-slate-950"></span>
+                    )}
                   </span>
                   <ChevronDown className={`hidden h-4 w-4 text-slate-400 transition-transform sm:block ${accountMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -351,7 +368,7 @@ export default function AppShell() {
                       </div>
                     </div>
                     <button onClick={handleLogout} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-danger-100 px-4 py-2.5 text-sm font-extrabold text-danger-600 transition hover:bg-danger-50 dark:border-danger-950/40 dark:text-danger-400 dark:hover:bg-danger-950/20">
-                      <LogOut className="h-4 w-4" /> Keluar
+                      <LogOut className="h-4 w-4" /> {isOffline ? 'Kunci Layar' : 'Keluar'}
                     </button>
                   </div>
                 ) : null}
@@ -366,6 +383,7 @@ export default function AppShell() {
         </main>
       </div>
 
+      {isQueueManagerOpen && <SyncQueueManager onClose={() => setQueueManagerOpen(false)} />}
     </div>
   );
 }

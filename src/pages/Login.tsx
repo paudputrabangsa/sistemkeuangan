@@ -19,13 +19,14 @@ export default function Login() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
+  const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!email || !password) {
-      setError('Harap lengkapi semua kolom.');
+    if (!password) {
+      setError('Harap masukkan Password, PIN, atau Sandi Darurat.');
       return;
     }
 
@@ -91,7 +92,7 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Field */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Email Sekolah</label>
+              <label className="text-xs font-bold text-slate-700">Email Sekolah <span className="text-slate-400 font-normal">(Opsional jika pakai PIN/Sandi Darurat)</span></label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
                   <Mail className="h-4.5 w-4.5" />
@@ -108,7 +109,7 @@ export default function Login() {
 
             {/* Password Field */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Password</label>
+              <label className="text-xs font-bold text-slate-700">Password / PIN Kasir / Sandi Darurat</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
                   <Lock className="h-4.5 w-4.5" />

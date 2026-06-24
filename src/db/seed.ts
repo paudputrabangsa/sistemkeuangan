@@ -79,6 +79,14 @@ function defaultSettings(): Pengaturan[] {
       created_at: timestamp,
       updated_at: timestamp,
     }),
+    withSyncMeta({
+      id: '00000000-0000-0000-0000-000000000012',
+      kunci: 'kode_perangkat',
+      nilai: { kode: 'A' },
+      keterangan: 'Kode perangkat untuk penomoran kuitansi offline',
+      created_at: timestamp,
+      updated_at: timestamp,
+    }),
   ];
 }
 
@@ -150,7 +158,7 @@ async function ensureProfile() {
     alamat_kabupaten: 'Jakarta Selatan',
     alamat_provinsi: 'DKI Jakarta',
     alamat_kode_pos: null,
-    nama_kepsek: 'Siti Rahmawati, S.Pd',
+    nama_kepsek: 'Admin',
     logo_url: null,
     tanda_tangan_url: null,
     created_at: timestamp,
@@ -175,7 +183,7 @@ async function ensureAdmin() {
   const timestamp = now();
   await db.akun.add(withSyncMeta({
     id: '00000000-0000-0000-0000-000000000010',
-    nama: 'Siti Rahmawati, S.Pd',
+    nama: 'Admin',
     email: 'admin@paud.sch.id',
     role: 'admin' as const,
     aktif: true,
@@ -187,6 +195,21 @@ async function ensureAdmin() {
 export async function ensureLoginBootstrap() {
   await ensureAdmin();
   await ensurePermissions();
+
+  const { hashString } = await import('../services/authService');
+  const nowStr = now();
+
+  const existingPin = await db.pengaturan.where('kunci').equals('auth_pin_hash').first();
+  if (!existingPin) {
+    const pinHash = await hashString('123456');
+    await db.pengaturan.add({ id: '00000000-0000-0000-0000-000000000901', kunci: 'auth_pin_hash', nilai: { hash: pinHash }, created_at: nowStr, updated_at: nowStr, keterangan: 'PIN Kasir (Default: 123456)', _sync_status: 'synced', _sync_at: nowStr, _local_only: false });
+  }
+
+  const existingSandi = await db.pengaturan.where('kunci').equals('auth_sandi_darurat_hash').first();
+  if (!existingSandi) {
+    const sandiHash = await hashString('doomsday123');
+    await db.pengaturan.add({ id: '00000000-0000-0000-0000-000000000902', kunci: 'auth_sandi_darurat_hash', nilai: { hash: sandiHash }, created_at: nowStr, updated_at: nowStr, keterangan: 'Sandi Darurat (Default: doomsday123)', _sync_status: 'synced', _sync_at: nowStr, _local_only: false });
+  }
 }
 
 async function ensurePermissions() {

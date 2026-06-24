@@ -19,79 +19,76 @@ export const SYNCABLE_TABLES: SyncableTableName[] = [
 ];
 
 /**
- * Pushes local queued changes to Supabase
+ * Pushes local queued changes to Supabase sequentially to respect Foreign Key dependencies.
  */
 export async function pushSync(): Promise<void> {
   if (!import.meta.env.VITE_SUPABASE_URL || !navigator.onLine) return;
 
-  const queue = await db.sync_queue.orderBy('created_at').toArray();
-  if (queue.length === 0) return;
-
-  // Group by table
-  const byTable = queue.reduce((acc, item) => {
-    if (!acc[item.tabel]) acc[item.tabel] = [];
-    acc[item.tabel].push(item);
-    return acc;
-  }, {} as Record<string, typeof queue>);
-
-  for (const table of Object.keys(byTable)) {
-    const items = byTable[table];
+  // Only process pending queue items
+  const queue = await db.sync_queue
+    .where('status').notEqual('failed') // We need to index 'status' or just filter
+    .toArray();
     
-    // We only process 'insert' and 'update' via upsert.
-    // For 'delete', we just ensure it gets pushed if we use soft deletes.
-    // Our app uses soft deletes (deleted_at is set), so 'delete' action in queue is actually just an update setting deleted_at.
-    
-    const payloads = items.map(i => {
-      const p = { ...i.payload };
-      // Remove dexie-only metadata
-      delete p._sync_status;
-      delete p._sync_at;
-      delete p._local_only;
-      return p;
-    });
+  // Since 'status' is not fully indexed in Dexie yet, let's filter manually just in case
+  const pendingQueue = queue.filter(q => q.status !== 'failed').sort((a, b) => a.id! - b.id!);
+
+  if (pendingQueue.length === 0) return;
+
+  for (const item of pendingQueue) {
+    const payload = { ...item.payload };
+    // Remove dexie-only metadata
+    delete payload._sync_status;
+    delete payload._sync_at;
+    delete payload._local_only;
 
     try {
-      const { error } = await supabase.from(table).upsert(payloads);
+      const state = (await import('../store/authStore')).useAuthStore.getState();
+      if (!navigator.onLine || state.forceOffline) break; // Abort if network lost or forced offline mid-sync
+      // Upsert sequentially
+      const { error } = await supabase.from(item.tabel).upsert(payload);
       
       if (error) {
-        console.error(`Failed to push to ${table}:`, error);
-        // Log failure
-        for (const item of items) {
-          await db.sync_log.add({
-            tabel: table,
-            record_id: item.record_id,
-            status: 'failed',
-            created_at: new Date().toISOString(),
-            error_message: error.message
-          });
-        }
+        console.error(`Failed to push item ${item.id} to ${item.tabel}:`, error);
+        
+        // Mark as failed instead of blocking the entire queue
+        await db.sync_queue.update(item.id!, {
+          status: 'failed',
+          error_message: error.message,
+          retry_count: item.retry_count + 1
+        });
+        
+        await db.sync_log.add({
+          tabel: item.tabel,
+          record_id: item.record_id,
+          status: 'failed',
+          created_at: new Date().toISOString(),
+          error_message: error.message
+        });
       } else {
         // Success
-        const idsToDelete = items.map(i => i.id!);
-        await db.sync_queue.bulkDelete(idsToDelete);
+        await db.sync_queue.delete(item.id!);
         
-        // Update local records to 'synced'
-        const recordIds = items.map(i => i.record_id);
-        const dexieTable = db.table(table);
-        const recordsToUpdate = await dexieTable.where('id').anyOf(recordIds).toArray();
-        for (const record of recordsToUpdate) {
+        // Update local record to 'synced'
+        const dexieTable = db.table(item.tabel);
+        const record = await dexieTable.get(item.record_id);
+        if (record) {
           record._sync_status = 'synced';
           record._sync_at = new Date().toISOString();
+          await dexieTable.put(record);
         }
-        await dexieTable.bulkPut(recordsToUpdate);
         
         // Log success
-        for (const item of items) {
-          await db.sync_log.add({
-            tabel: table,
-            record_id: item.record_id,
-            status: 'success',
-            created_at: new Date().toISOString()
-          });
-        }
+        await db.sync_log.add({
+          tabel: item.tabel,
+          record_id: item.record_id,
+          status: 'success',
+          created_at: new Date().toISOString()
+        });
       }
-    } catch (err) {
-      console.error(`Error during push for ${table}:`, err);
+    } catch (err: any) {
+      console.error(`Error during push for item ${item.id} in ${item.tabel}:`, err);
+      // Hard error (e.g. network lost mid-sync), stop processing to avoid out-of-order execution
+      break; 
     }
   }
 }
@@ -108,6 +105,7 @@ export async function pullSync(isInitial = false): Promise<void> {
   const lastSync = isInitial ? null : localStorage.getItem(LAST_SYNC_KEY);
   
   let latestTimestamp = lastSync || '2000-01-01T00:00:00.000Z';
+  let hasChanges = false;
 
   for (const table of SYNCABLE_TABLES) {
     let query = supabase.from(table).select('*');
@@ -116,6 +114,8 @@ export async function pullSync(isInitial = false): Promise<void> {
     }
 
     try {
+      const state = (await import('../store/authStore')).useAuthStore.getState();
+      if (!navigator.onLine || state.forceOffline) break; // Abort if network lost or forced offline mid-sync
       const { data, error } = await query;
       
       if (error) {
@@ -124,6 +124,7 @@ export async function pullSync(isInitial = false): Promise<void> {
       }
 
       if (data && data.length > 0) {
+        hasChanges = true;
         const dexieTable = db.table(table);
         const localRecords = await dexieTable.where('id').anyOf(data.map(d => d.id)).toArray();
         const localMap = new Map(localRecords.map(r => [r.id, r]));
@@ -175,14 +176,87 @@ export async function pullSync(isInitial = false): Promise<void> {
     }
   }
 
-  // Save new sync timestamp
-  localStorage.setItem(LAST_SYNC_KEY, new Date().toISOString());
+  // Save new sync timestamp using the exact maximum timestamp we saw
+  if (hasChanges && latestTimestamp > (lastSync || '')) {
+    localStorage.setItem(LAST_SYNC_KEY, latestTimestamp);
+  } else if (isInitial) {
+    localStorage.setItem(LAST_SYNC_KEY, new Date().toISOString());
+  }
 }
+
+let isSyncing = false;
 
 /**
  * Triggers a full sync cycle: Push then Pull.
+ * Prevents overlapping if the previous sync is still running (e.g. timeout on dead server).
  */
 export async function triggerFullSync(): Promise<void> {
-  await pushSync();
-  await pullSync();
+  if (isSyncing) return;
+  isSyncing = true;
+  try {
+    await pushSync();
+    await pullSync();
+  } finally {
+    isSyncing = false;
+  }
+}
+
+/**
+ * Retries a failed sync item by marking it as pending and triggering a sync.
+ */
+export async function retrySyncItem(queueId: number): Promise<void> {
+  const item = await db.sync_queue.get(queueId);
+  if (!item || item.status !== 'failed') return;
+  
+  await db.sync_queue.update(queueId, { status: 'pending', error_message: null });
+  // Fire-and-forget trigger to attempt sync immediately
+  triggerFullSync().catch(console.error);
+}
+
+/**
+ * Discards a failed sync item and reverts the local database state.
+ * For 'insert', it deletes the local record permanently.
+ * For 'update'/'delete', it fetches the true state from Supabase and overwrites the local record.
+ */
+export async function discardSyncItem(queueId: number): Promise<void> {
+  const item = await db.sync_queue.get(queueId);
+  if (!item) return;
+
+  try {
+    const dexieTable = db.table(item.tabel);
+
+    if (item.action === 'insert') {
+      // Local creation failed, discard means we delete it entirely
+      await dexieTable.delete(item.record_id);
+    } else {
+      // It was an update or delete that failed, we need to revert to remote state
+      const { data, error } = await supabase.from(item.tabel).select('*').eq('id', item.record_id).maybeSingle();
+      if (error) throw error;
+      
+      if (data) {
+        // Remote data exists, overwrite local
+        await dexieTable.put({
+          ...data,
+          _sync_status: 'synced',
+          _sync_at: new Date().toISOString()
+        });
+      } else {
+        // Remote data doesn't exist anymore, delete local
+        await dexieTable.delete(item.record_id);
+      }
+    }
+
+    // Clean up queue and log the discard action
+    await db.sync_queue.delete(queueId);
+    await db.sync_log.add({
+      tabel: item.tabel,
+      record_id: item.record_id,
+      status: 'success', // or 'discarded' if you prefer, but 'success' indicates the queue resolved
+      created_at: new Date().toISOString(),
+      error_message: 'Discarded by user'
+    });
+  } catch (err: any) {
+    console.error(`Failed to discard sync item ${queueId}:`, err);
+    throw new Error('Gagal membuang antrean: ' + err.message);
+  }
 }

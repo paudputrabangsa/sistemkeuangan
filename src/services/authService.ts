@@ -14,9 +14,33 @@ export interface UserSession {
 
 const DEFAULT_ADMIN_PASSWORD = 'admin123';
 
+export async function hashString(input: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export async function loginWithPassword(email: string, password: string): Promise<UserSession> {
   const normalizedEmail = email.trim().toLowerCase();
   await ensureLoginBootstrap();
+
+  try {
+    return await loginWithSandiDarurat(password);
+  } catch (err) {
+    // Bukan sandi darurat
+  }
+
+  try {
+    return await loginWithPin(password);
+  } catch (err) {
+    // Bukan PIN
+  }
+
+  if (!navigator.onLine) {
+    throw new AuthenticationError('Anda sedang offline. Gunakan PIN Kasir atau Sandi Darurat.');
+  }
 
   let token = undefined;
   
@@ -75,6 +99,60 @@ export async function loginWithPassword(email: string, password: string): Promis
     aktif: akun!.aktif,
     token
   };
+}
+
+export async function loginWithPin(pin: string): Promise<UserSession> {
+  await ensureLoginBootstrap();
+  const pinHash = await hashString(pin);
+  const settingPin = await db.pengaturan.where('kunci').equals('auth_pin_hash').first();
+  if (!settingPin || settingPin.nilai?.hash !== pinHash) {
+    throw new AuthenticationError('PIN salah.');
+  }
+
+  const akunAdmin = await db.akun.filter(a => a.role === 'admin' && a.aktif && !a.deleted_at).first();
+  if (!akunAdmin) throw new AuthenticationError('Tidak ada akun admin aktif.');
+
+  return { id: akunAdmin.id, nama: akunAdmin.nama, email: akunAdmin.email, role: 'admin', aktif: true };
+}
+
+export async function loginWithSandiDarurat(sandi: string): Promise<UserSession> {
+  await ensureLoginBootstrap();
+  const sandiHash = await hashString(sandi);
+  const settingSandi = await db.pengaturan.where('kunci').equals('auth_sandi_darurat_hash').first();
+  if (!settingSandi || settingSandi.nilai?.hash !== sandiHash) {
+    throw new AuthenticationError('Sandi darurat salah.');
+  }
+
+  const akunAdmin = await db.akun.filter(a => a.role === 'admin' && a.aktif && !a.deleted_at).first();
+  if (!akunAdmin) throw new AuthenticationError('Tidak ada akun admin aktif.');
+
+  return { id: akunAdmin.id, nama: akunAdmin.nama, email: akunAdmin.email, role: 'admin', aktif: true };
+}
+
+export async function setPinKasir(pin: string) {
+  const hash = await hashString(pin);
+  const existing = await db.pengaturan.where('kunci').equals('auth_pin_hash').first();
+  const now = new Date().toISOString();
+  if (existing) {
+    existing.nilai = { hash };
+    existing.updated_at = now;
+    await db.pengaturan.put(existing);
+  } else {
+    await db.pengaturan.add({ id: crypto.randomUUID(), kunci: 'auth_pin_hash', nilai: { hash }, created_at: now, updated_at: now, keterangan: 'PIN Kasir', _sync_status: 'synced', _sync_at: now, _local_only: false });
+  }
+}
+
+export async function setSandiDarurat(sandi: string) {
+  const hash = await hashString(sandi);
+  const existing = await db.pengaturan.where('kunci').equals('auth_sandi_darurat_hash').first();
+  const now = new Date().toISOString();
+  if (existing) {
+    existing.nilai = { hash };
+    existing.updated_at = now;
+    await db.pengaturan.put(existing);
+  } else {
+    await db.pengaturan.add({ id: crypto.randomUUID(), kunci: 'auth_sandi_darurat_hash', nilai: { hash }, created_at: now, updated_at: now, keterangan: 'Sandi Darurat', _sync_status: 'synced', _sync_at: now, _local_only: false });
+  }
 }
 
 export async function logoutUser(): Promise<void> {

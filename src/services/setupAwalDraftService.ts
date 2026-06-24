@@ -98,6 +98,8 @@ export interface SetupAwalDraft {
   };
   diskon: SetupAwalDiskonDraft[];
   formatNIS: FormatNIS;
+  keamananPin: string;
+  keamananSandi: string;
   metodePembayaran: Array<{ id: string; nama: string; aktif: boolean }>;
   jenisTagihan: Array<{ id: string; nama: string; aktif: boolean }>;
   stepIndex: number;

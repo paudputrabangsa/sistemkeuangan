@@ -1,0 +1,48 @@
+name: Supabase Database Backup
+
+on:
+  schedule:
+    # Runs at 19:00 UTC every day (02:00 AM WIB next day)
+    - cron: '0 19 * * *'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Postgres client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Create backup directory
+        run: mkdir -p supabase/backups
+
+      - name: Dump Database
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          DATE=$(date +'%Y-%m-%d_%H-%M')
+          echo "Dumping database from Supabase..."
+          
+          # Use the connection string provided in GitHub Secrets
+          # SUPABASE_DB_URL format: postgres://[user]:[password]@[host]:[port]/[database]
+          
+          # Check if URL is provided
+          if [ -z "${{ secrets.SUPABASE_DB_URL }}" ]; then
+            echo "Error: SUPABASE_DB_URL secret is not set!"
+            exit 1
+          fi
+          
+          # Execute pg_dump
+          pg_dump "${{ secrets.SUPABASE_DB_URL }}" -F c -f supabase/backups/db_backup_$DATE.dump
+          
+          echo "Backup successful! File saved as db_backup_$DATE.dump"
+
+      - name: Upload Backup to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-database-backup
+          path: supabase/backups/*.dump
+          retention-days: 90

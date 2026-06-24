@@ -11,6 +11,15 @@ async function bootstrap() {
     console.error('IndexedDB initialization failed:', err);
   }
 
+  if (navigator.storage && navigator.storage.persist) {
+    try {
+      const isPersisted = await navigator.storage.persist();
+      console.log(`Persistent storage granted: ${isPersisted}`);
+    } catch (err) {
+      console.error('Failed to request persistent storage:', err);
+    }
+  }
+
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />

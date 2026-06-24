@@ -124,9 +124,12 @@ export class ReferenceGeneratorService {
     const ta = await db.tahun_ajaran.get(tahunAjaranId);
     if (!ta) throw new Error('Tahun ajaran tidak ditemukan');
 
+    const settingKode = await db.pengaturan.where('kunci').equals('kode_perangkat').first();
+    const kodePerangkat = settingKode?.nilai?.kode || '001';
+
     const taString = this.getTahunAjaranSingkat(ta.nama);
     const bulanStr = String(bulan).padStart(2, '0');
-    const prefix = `KWT-${taString}-${bulanStr}-`;
+    const prefix = `KWT-${kodePerangkat}-${taString}-${bulanStr}-`;
 
     const lastPembayaran = await db.pembayaran
       .filter((p) => !!p.no_kuitansi && p.no_kuitansi.startsWith(prefix))
