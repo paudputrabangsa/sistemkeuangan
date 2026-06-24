@@ -19,7 +19,6 @@ export default function Login() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
-  const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

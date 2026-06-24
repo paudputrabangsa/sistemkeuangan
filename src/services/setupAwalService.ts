@@ -125,16 +125,6 @@ function validateSetupDraft(draft: SetupAwalDraft) {
     billTypeKeys.add(key);
   }
 
-  // --- Keamanan ---
-  if (!draft.keamananPin || draft.keamananPin.length < 4) {
-    throw new ValidationError('PIN Kasir wajib diisi minimal 4 angka.');
-  }
-  if (!/^\d+$/.test(draft.keamananPin)) {
-    throw new ValidationError('PIN Kasir hanya boleh berisi angka.');
-  }
-  if (!draft.keamananSandi || draft.keamananSandi.length < 6) {
-    throw new ValidationError('Sandi Darurat wajib diisi minimal 6 karakter.');
-  }
 }
 
 export async function completeSetupAwal(actor: ServiceActor, draft: SetupAwalDraft) {

@@ -58,10 +58,10 @@ export default function SyncQueueManager({ onClose }: SyncQueueManagerProps) {
     }
   };
 
-  const handleDiscard = (id: number, action: string) => {
+  const handleDiscard = (id: number, aksi: string) => {
     requestConfirm({
       title: 'Buang Antrean?',
-      description: action === 'insert' 
+      description: aksi === 'insert' 
         ? 'Tugas ini adalah penambahan data baru. Jika dibuang, data lokal yang terkait akan dihapus secara permanen dari komputer ini.' 
         : 'Tugas ini adalah perubahan/penghapusan data. Jika dibuang, data lokal Anda akan ditimpa ulang (Revert) sesuai dengan versi asli di server Supabase.',
       confirmLabel: 'Ya, Buang & Revert',

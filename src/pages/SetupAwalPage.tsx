@@ -224,15 +224,13 @@ export default function SetupAwalPage() {
   const [metodePembayaran, setMetodePembayaran] = useState(sanitizeMetode(initialDraft?.metodePembayaran));
   const [jenisTagihan, setJenisTagihan] = useState(sanitize(initialDraft?.jenisTagihan, defaultJenisTagihan));
 
-  const [keamananPin, setKeamananPin] = useState(initialDraft?.keamananPin ?? '');
-  const [keamananSandi, setKeamananSandi] = useState(initialDraft?.keamananSandi ?? '');
 
   const currentStep = steps[stepIndex];
 
   // Save draft on every state change
   useEffect(() => {
-    saveSetupAwalDraft({ mode, profile, year, tingkatRows, cutoff, sppCutoff, pendaftaranDiLuarSistem, komponenBiaya, modeTagihanBiaya, jatuhTempoPendaftaran, diskon, formatNIS, keamananPin, keamananSandi, metodePembayaran, jenisTagihan, stepIndex, maxStepReached });
-  }, [mode, profile, year, tingkatRows, cutoff, sppCutoff, pendaftaranDiLuarSistem, komponenBiaya, modeTagihanBiaya, jatuhTempoPendaftaran, diskon, formatNIS, keamananPin, keamananSandi, metodePembayaran, jenisTagihan, stepIndex, maxStepReached]);
+    saveSetupAwalDraft({ mode, profile, year, tingkatRows, cutoff, sppCutoff, pendaftaranDiLuarSistem, komponenBiaya, modeTagihanBiaya, jatuhTempoPendaftaran, diskon, formatNIS, metodePembayaran, jenisTagihan, stepIndex, maxStepReached });
+  }, [mode, profile, year, tingkatRows, cutoff, sppCutoff, pendaftaranDiLuarSistem, komponenBiaya, modeTagihanBiaya, jatuhTempoPendaftaran, diskon, formatNIS, metodePembayaran, jenisTagihan, stepIndex, maxStepReached]);
 
   // ===================== Tingkat/Kelas CRUD =====================
 

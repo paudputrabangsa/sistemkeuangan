@@ -225,7 +225,7 @@ export async function discardSyncItem(queueId: number): Promise<void> {
   try {
     const dexieTable = db.table(item.tabel);
 
-    if (item.action === 'insert') {
+    if (item.aksi === 'insert') {
       // Local creation failed, discard means we delete it entirely
       await dexieTable.delete(item.record_id);
     } else {
