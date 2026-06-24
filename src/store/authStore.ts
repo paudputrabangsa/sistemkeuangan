@@ -9,8 +9,9 @@ interface AuthState {
   forceOffline: boolean;
   isInitialSyncDone: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
   setOfflineStatus: (status: boolean) => void;
+
   toggleForceOffline: () => void;
   performInitialSync: () => Promise<void>;
 }
@@ -41,8 +42,14 @@ export const useAuthStore = create<AuthState>((set, get) => {
       }
     },
 
-    logout: () => {
+    logout: async () => {
       localStorage.removeItem('paud_admin_session');
+      try {
+        const { logoutUser } = await import('../services/authService');
+        await logoutUser();
+      } catch (e) {
+        console.error('Failed to logout from Supabase:', e);
+      }
       set({ user: null, isAuthenticated: false, isInitialSyncDone: false });
     },
 
