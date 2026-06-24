@@ -258,6 +258,7 @@ export class AppDatabase extends Dexie {
       siswa_kelas: 'id, siswa_id, kelas_id, updated_at, _sync_status',
       tagihan: 'id, siswa_id, tahun_ajaran_id, jenis, status, bulan_tahun, updated_at, _sync_status',
       pembayaran: 'id, tagihan_id, payment_group_id, status_verifikasi, updated_at, _sync_status',
+      sync_queue: '++id, tabel, record_id, aksi, created_at',
       sync_log: '++id, tabel, record_id, status, created_at',
       audit_log: 'id, tabel, record_id, user_id, aksi, created_at, _sync_status'
     });
