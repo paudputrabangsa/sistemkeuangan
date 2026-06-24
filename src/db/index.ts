@@ -414,6 +414,24 @@ export class AppDatabase extends Dexie {
           record.error_message = typeof record.error_message === 'string' ? record.error_message : null;
         });
       });
+
+    this.version(15).stores({
+        profil_sekolah: 'id, updated_at, _sync_status',
+        pengaturan: 'id, kunci, updated_at, _sync_status',
+        tahun_ajaran: 'id, aktif, updated_at, _sync_status',
+        tingkat: 'id, tahun_ajaran_id, updated_at, _sync_status',
+        kelas: 'id, tahun_ajaran_id, tingkat_id, updated_at, _sync_status',
+        pengaturan_pendaftaran_tahun_ajaran: 'id, tahun_ajaran_id, updated_at, _sync_status',
+        akun: 'id, email, role, updated_at, _sync_status',
+        permission: 'id, role, modul, updated_at, _sync_status',
+        siswa: 'id, nis, no_pendaftaran, status, tahun_ajaran_target_id, kelas_rencana_id, jalur_registrasi, kode_import_siswa, updated_at, _sync_status',
+        siswa_kelas: 'id, siswa_id, kelas_id, updated_at, _sync_status',
+        tagihan: 'id, no_referensi, siswa_id, tahun_ajaran_id, jenis, status, bulan_tahun, updated_at, _sync_status',
+        pembayaran: 'id, no_kuitansi, tagihan_id, payment_group_id, status_verifikasi, updated_at, _sync_status',
+        sync_queue: '++id, group_id, status, tabel, record_id, aksi, created_at',
+        sync_log: '++id, tabel, record_id, status, created_at',
+        audit_log: 'id, tabel, record_id, user_id, aksi, created_at, _sync_status'
+      });
   }
 }
 
