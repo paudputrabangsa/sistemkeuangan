@@ -3,7 +3,8 @@ import type { Akun, Pengaturan, Permission } from './types';
 import { DEFAULT_JENIS_TAGIHAN, DEFAULT_METODE_PEMBAYARAN, repairSettingList } from '../services/pengaturanRepository';
 
 const PROFILE_ID = '00000000-0000-0000-0000-000000000001';
-const now = () => new Date().toISOString();
+// Gunakan timestamp masa lalu untuk seed agar LWW selalu memprioritaskan data remote saat sinkronisasi ditarik (pull) ke perangkat baru
+const now = () => '2000-01-01T00:00:00.000Z';
 
 function withSyncMeta<T extends Record<string, unknown>>(value: T) {
   const timestamp = now();

@@ -338,6 +338,8 @@ export async function completeSetupAwal(actor: ServiceActor, draft: SetupAwalDra
     await markSetupAwalCompleted();
   });
 
+  // Trigger sync in background to ensure data is saved immediately
+  import('./syncService').then(({ triggerFullSync }) => triggerFullSync().catch(console.error));
 
   return { year, tingkatRecords, kelasRecords, registration };
 }

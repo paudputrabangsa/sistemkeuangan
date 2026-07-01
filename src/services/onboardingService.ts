@@ -51,6 +51,10 @@ async function saveOnboardingStatus(value: OnboardingStatus) {
 
   await db.pengaturan.put(record);
   await enqueueSync('pengaturan', record.id, existing && !existing.deleted_at ? 'update' : 'insert', record);
+
+  // Trigger sync in background to ensure data is saved immediately
+  import('./syncService').then(({ triggerFullSync }) => triggerFullSync().catch(console.error));
+
   return record;
 }
 
